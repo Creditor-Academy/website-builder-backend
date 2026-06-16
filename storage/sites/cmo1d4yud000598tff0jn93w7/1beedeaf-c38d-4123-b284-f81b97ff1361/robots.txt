@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ebookathena.s3.us-east-1.amazonaws.com/sites/cmo1d4yud000598tff0jn93w7/latest/sitemap.xml

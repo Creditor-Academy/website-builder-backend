@@ -1,0 +1,682 @@
+import crypto from 'crypto';
+
+type SectionContent = Record<string, any>;
+type SectionStyles = Record<string, any>;
+
+interface Section {
+  id: string;
+  type: string;
+  name?: string;
+  visible?: boolean;
+  content: SectionContent;
+  styles?: SectionStyles;
+}
+
+interface PageData {
+  id: string;
+  name: string;
+  slug: string;
+  sections: Section[];
+  meta?: { title?: string; description?: string };
+  navbar?: Record<string, any>;
+  footer?: Record<string, any>;
+  globalStyles?: Record<string, any>;
+}
+
+interface GeneratedFile {
+  filename: string;
+  html: string;
+}
+
+const esc = (text: unknown): string => {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&nbsp;/g, '\u00A0')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+
+/** Render rich text that may contain HTML formatting (font colors, bold, italic, etc.) */
+const richText = (text: unknown): string => {
+  if (text == null) return '';
+  return String(text).replace(/&nbsp;/g, '\u00A0');
+};
+
+const cssFromStyles = (styles: SectionStyles | undefined): string => {
+  if (!styles) return '';
+  const parts: string[] = [];
+  if (styles.backgroundColor) parts.push(`background-color:${styles.backgroundColor}`);
+  if (styles.useGradient && styles.backgroundGradient) parts.push(`background:${styles.backgroundGradient}`);
+  if (styles.padding) parts.push(`padding:${styles.padding}`);
+  if (styles.minHeight) parts.push(`min-height:${styles.minHeight}`);
+  if (styles.headingColor) parts.push(`--heading-color:${styles.headingColor}`);
+  if (styles.paragraphColor) parts.push(`--paragraph-color:${styles.paragraphColor}`);
+  return parts.join(';');
+};
+
+const renderButton = (text: string | undefined, isPrimary: boolean, styles?: SectionStyles): string => {
+  if (!text) return '';
+  const bg = isPrimary
+    ? (styles?.buttonPrimaryBg || '#2563eb')
+    : (styles?.buttonSecondaryBg || 'transparent');
+  const color = isPrimary
+    ? (styles?.buttonPrimaryText || '#ffffff')
+    : (styles?.buttonSecondaryText || '#2563eb');
+  const border = isPrimary ? 'none' : `2px solid ${color}`;
+  return `<a class="btn" style="background:${bg};color:${color};border:${border}">${esc(text)}</a>`;
+};
+
+const sectionRenderers: Record<string, (c: SectionContent, s?: SectionStyles) => string> = {
+  hero(c, s) {
+    return `
+      <div class="section-inner hero-inner">
+        ${c.eyebrowText ? `<span class="eyebrow">${esc(c.eyebrowText)}</span>` : ''}
+        <h1 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h1>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="btn-group">
+          ${renderButton(c.ctaText, true, s)}
+          ${renderButton(c.ctaSecondaryText, false, s)}
+        </div>
+        ${c.imageUrl ? `<img src="${esc(c.imageUrl)}" alt="" class="hero-img"/>` : ''}
+      </div>`;
+  },
+
+  features(c, s) {
+    const items = Array.isArray(c.features) ? c.features : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${items.map((f: any) => `
+            <div class="card" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              <h3>${esc(f.title)}</h3>
+              <p>${esc(f.description)}</p>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  services(c, s) {
+    const items = Array.isArray(c.services) ? c.services : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${items.map((svc: any) => `
+            <div class="card" style="background:${s?.cardBackgroundColor || '#f8fafc'}">
+              ${svc.imageUrl ? `<img src="${esc(svc.imageUrl)}" alt="${esc(svc.title)}" class="card-img"/>` : ''}
+              <h3>${esc(svc.title)}</h3>
+              <p>${esc(svc.description)}</p>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  cta(c, s) {
+    return `
+      <div class="section-inner cta-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="btn-group">
+          ${renderButton(c.ctaText, true, s)}
+          ${renderButton(c.ctaSecondaryText, false, s)}
+        </div>
+      </div>`;
+  },
+
+  testimonials(c, s) {
+    const items = Array.isArray(c.testimonials) ? c.testimonials : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${items.map((t: any) => `
+            <div class="card testimonial-card" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              <p class="quote">"${esc(t.quote)}"</p>
+              <div class="testimonial-author">
+                ${t.avatar ? `<img src="${esc(t.avatar)}" alt="${esc(t.name)}" class="avatar"/>` : ''}
+                <div><strong>${esc(t.name)}</strong><br/><small>${esc(t.role)}</small></div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  pricing(c, s) {
+    const plans = Array.isArray(c.plans) ? c.plans : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${plans.map((p: any) => `
+            <div class="card pricing-card ${p.popular ? 'popular' : ''}" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              ${p.popular ? '<span class="popular-badge">Popular</span>' : ''}
+              <h3>${esc(p.name)}</h3>
+              <p>${esc(p.description)}</p>
+              <div class="price">$${esc(p.price)}</div>
+              <ul>${(Array.isArray(p.features) ? p.features : []).map((f: string) => `<li>${esc(f)}</li>`).join('')}</ul>
+              ${renderButton(p.ctaText || 'Get Started', true, s)}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  gallery(c, s) {
+    const images = Array.isArray(c.images) ? c.images : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="gallery-grid">
+          ${images.map((img: any) => `
+            <figure>
+              <img src="${esc(img.url)}" alt="${esc(img.title)}"/>
+              ${img.title ? `<figcaption>${esc(img.title)}</figcaption>` : ''}
+            </figure>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  stats(c, s) {
+    const stats = Array.isArray(c.stats) ? c.stats : [];
+    return `
+      <div class="section-inner">
+        <div class="stats-grid">
+          ${stats.map((st: any) => `
+            <div class="stat">
+              <div class="stat-value" style="color:${s?.headingColor || 'inherit'}">${esc(st.value)}${esc(st.suffix || '')}</div>
+              <div class="stat-label" style="color:${s?.paragraphColor || 'inherit'}">${esc(st.label)}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  team(c, s) {
+    const members = Array.isArray(c.members) ? c.members : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${members.map((m: any) => `
+            <div class="card team-card" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              ${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" class="team-avatar"/>` : ''}
+              <h3>${esc(m.name)}</h3>
+              <p>${esc(m.role)}</p>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  faq(c, s) {
+    const faqs = Array.isArray(c.faqs) ? c.faqs : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="faq-list">
+          ${faqs.map((f: any) => `
+            <details class="faq-item">
+              <summary>${esc(f.question)}</summary>
+              <p>${esc(f.answer)}</p>
+            </details>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  logocloud(c, s) {
+    const logos = Array.isArray(c.logos) ? c.logos : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="logo-grid">
+          ${logos.map((l: any) => `<img src="${esc(l.url)}" alt="${esc(l.name)}" class="logo-img"/>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  contact(c, s) {
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="contact-grid">
+          <div class="contact-info">
+            ${c.email ? `<p>Email: ${esc(c.email)}</p>` : ''}
+            ${c.phone ? `<p>Phone: ${esc(c.phone)}</p>` : ''}
+            ${c.address ? `<p>Address: ${esc(c.address)}</p>` : ''}
+          </div>
+          <form class="contact-form" data-form-name="contact">
+            <input type="text" name="firstName" placeholder="${esc(c.labelFirstName || 'First Name')}" required/>
+            <input type="text" name="lastName" placeholder="${esc(c.labelLastName || 'Last Name')}"/>
+            <input type="email" name="email" placeholder="${esc(c.labelEmail || 'Email')}" required/>
+            <textarea name="message" placeholder="${esc(c.labelMessage || 'Message')}" rows="4" required></textarea>
+            <button type="submit" class="btn" style="background:${s?.buttonPrimaryBg || '#2563eb'};color:${s?.buttonPrimaryText || '#ffffff'};border:none;cursor:pointer">Send Message</button>
+            <p class="form-status" style="display:none;margin-top:8px;font-size:.9rem"></p>
+          </form>
+        </div>
+      </div>`;
+  },
+
+  about(c, s) {
+    return `
+      <div class="section-inner about-inner ${c.imagePosition === 'left' ? 'img-left' : ''}">
+        <div class="about-text">
+          ${c.badge ? `<span class="eyebrow">${esc(c.badge)}</span>` : ''}
+          <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+          <p style="color:${s?.paragraphColor || 'inherit'}">${richText(c.description)}</p>
+          ${c.storyTitle ? `<h3>${esc(c.storyTitle)}</h3>` : ''}
+          ${c.storyContent ? `<p>${esc(c.storyContent)}</p>` : ''}
+        </div>
+        ${c.imageUrl ? `<img src="${esc(c.imageUrl)}" alt="${esc(c.imageAlt || '')}" class="about-img"/>` : ''}
+      </div>`;
+  },
+
+  masonry(c, s) {
+    const images = Array.isArray(c.images) ? c.images : [];
+    return `
+      <div class="section-inner">
+        ${c.headline ? `<h2 style="color:${s?.headingColor || 'inherit'}">${esc(c.headline)}</h2>` : ''}
+        ${c.subheadline ? `<p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${esc(c.subheadline)}</p>` : ''}
+        <div class="masonry-grid">
+          ${images.map((img: any) => `
+            <figure class="masonry-item">
+              <img src="${esc(img.url || img.src)}" alt="${esc(img.title || img.alt || '')}" loading="lazy"/>
+              ${img.title ? `<figcaption>${esc(img.title)}</figcaption>` : ''}
+            </figure>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  bloglist(c, s) {
+    const posts = Array.isArray(c.posts) ? c.posts : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${posts.map((p: any) => `
+            <article class="card" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="${esc(p.title)}" class="card-img"/>` : ''}
+              ${p.category ? `<span class="eyebrow">${esc(p.category)}</span>` : ''}
+              <h3>${esc(p.title)}</h3>
+              <p>${esc(p.excerpt || p.description)}</p>
+              ${p.author ? `<small>${esc(p.author)}</small>` : ''}
+            </article>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  casestudies(c, s) {
+    const cases = Array.isArray(c.cases) ? c.cases : [];
+    return `
+      <div class="section-inner">
+        <h2 style="color:${s?.headingColor || 'inherit'}">${richText(c.headline)}</h2>
+        <p class="sub" style="color:${s?.paragraphColor || 'inherit'}">${richText(c.subheadline)}</p>
+        <div class="card-grid">
+          ${cases.map((cs: any) => `
+            <div class="card" style="background:${s?.cardBackgroundColor || '#ffffff'}">
+              ${cs.imageUrl ? `<img src="${esc(cs.imageUrl)}" alt="${esc(cs.title)}" class="card-img"/>` : ''}
+              <h3>${esc(cs.title)}</h3>
+              <p>${esc(cs.description)}</p>
+              ${cs.result ? `<p class="stat-value" style="color:${s?.headingColor || '#2563eb'}">${esc(cs.result)}</p>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  buttonblock(c, s) {
+    return `
+      <div class="section-inner cta-inner">
+        <div class="btn-group">
+          ${renderButton(c.buttonText || c.text || 'Click Here', true, s)}
+          ${c.secondaryText ? renderButton(c.secondaryText, false, s) : ''}
+        </div>
+      </div>`;
+  },
+
+  textblock(c, s) {
+    return `
+      <div class="section-inner" style="text-align:${c.textAlign || 'left'}">
+        ${c.headline ? `<h2 style="color:${s?.headingColor || 'inherit'}">${esc(c.headline)}</h2>` : ''}
+        <div style="color:${s?.paragraphColor || 'inherit'};max-width:800px;margin:0 auto;line-height:1.8">${c.body || c.text || c.content || ''}</div>
+      </div>`;
+  },
+
+  htmlblock(c) {
+    return `<div class="section-inner">${c.html || c.code || c.content || ''}</div>`;
+  },
+
+  content(c, s) {
+    return `
+      <div class="section-inner about-inner ${c.imagePosition === 'left' ? 'img-left' : ''}">
+        <div class="about-text">
+          ${c.headline ? `<h2 style="color:${s?.headingColor || 'inherit'}">${esc(c.headline)}</h2>` : ''}
+          <div style="color:${s?.paragraphColor || 'inherit'}">${c.body || esc(c.description || '')}</div>
+        </div>
+        ${c.imageUrl ? `<img src="${esc(c.imageUrl)}" alt="${esc(c.imageAlt || '')}" class="about-img"/>` : ''}
+      </div>`;
+  },
+
+  image(c) {
+    return `
+      <div class="section-inner" style="text-align:center">
+        ${c.imageUrl || c.src ? `<img src="${esc(c.imageUrl || c.src)}" alt="${esc(c.alt || c.caption || '')}" style="border-radius:12px;max-height:600px;margin:0 auto"/>` : ''}
+        ${c.caption ? `<p style="margin-top:12px;color:#64748b;font-size:.9rem">${esc(c.caption)}</p>` : ''}
+      </div>`;
+  },
+
+  layout(c, s) {
+    const columns = Array.isArray(c.columns) ? c.columns : [];
+    const colCount = columns.length || 2;
+    return `
+      <div class="section-inner">
+        <div style="display:grid;grid-template-columns:repeat(${colCount},1fr);gap:32px">
+          ${columns.map((col: any) => `<div>${col.content || col.html || esc(col.text || '')}</div>`).join('')}
+        </div>
+      </div>`;
+  },
+};
+
+// Aliases: frontend uses these type names but backend renderers use different keys
+sectionRenderers['blog'] = sectionRenderers['bloglist'];
+sectionRenderers['gallery-masonry'] = sectionRenderers['masonry'];
+sectionRenderers['text'] = sectionRenderers['textblock'];
+sectionRenderers['button'] = sectionRenderers['buttonblock'];
+sectionRenderers['html'] = sectionRenderers['htmlblock'];
+
+const renderSection = (section: Section): string => {
+  if (section.visible === false) return '';
+
+  const renderer = sectionRenderers[section.type];
+  const inner = renderer
+    ? renderer(section.content || {}, section.styles)
+    : `<div class="section-inner"><p>${esc(section.name || section.type)}</p></div>`;
+
+  return `<section class="site-section section-${esc(section.type)}" style="${cssFromStyles(section.styles)}">${inner}</section>`;
+};
+
+/** Rewrite internal page links to relative paths that work in the static site */
+const rewriteHref = (href: string, pageSlugs: Set<string>, currentSlug: string): string => {
+  if (!href || href === '#' || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+    return href;
+  }
+  const clean = href.replace(/^\/+/, '').replace(/\/+$/, '');
+  // Check if this links to a known page
+  if (clean === '' || clean === '/') {
+    // Link to home
+    const depth = currentSlug === '' ? 0 : 1;
+    return depth === 0 ? './index.html' : '../index.html';
+  }
+  if (pageSlugs.has(clean)) {
+    const depth = currentSlug === '' ? 0 : 1;
+    const prefix = depth === 0 ? './' : '../';
+    return `${prefix}${clean}/index.html`;
+  }
+  return href;
+};
+
+const renderNavbar = (navbar: Record<string, any> | undefined, pageSlugs: Set<string> = new Set(), currentSlug: string = ''): string => {
+  if (!navbar) return '';
+  // navbar.logo can be { text: "..." } object or a string
+  const rawBrand = navbar.brand || navbar.logo || navbar.title || '';
+  const brand = typeof rawBrand === 'object' && rawBrand !== null ? (rawBrand.text || rawBrand.name || '') : rawBrand;
+  const links = Array.isArray(navbar.links) ? navbar.links : [];
+  // Styles may be nested under navbar.styles (frontend) or directly on navbar (legacy)
+  const navStyles = navbar.styles || {};
+  const bgColor = navStyles.backgroundColor || navbar.backgroundColor || '#ffffff';
+  const textColor = navStyles.textColor || navbar.textColor || '#1e293b';
+  const linkColor = navStyles.linkColor || navbar.linkColor || textColor;
+  const logoUrl = navbar.logoUrl || navStyles.logoUrl || '';
+  const btnBg = navStyles.buttonBg || '#2563eb';
+  const btnText = navStyles.buttonText || '#ffffff';
+  const btnRadius = navStyles.buttonRadius || '8px';
+  return `
+    <nav class="site-nav" style="background:${bgColor};color:${textColor}">
+      <div class="nav-inner">
+        <div class="nav-brand">
+          ${logoUrl ? `<img src="${esc(logoUrl)}" alt="${esc(brand)}" class="nav-logo"/>` : ''}
+          <span>${esc(brand)}</span>
+        </div>
+        <div class="nav-links">
+          ${links.map((l: any, i: number) => {
+            const isLast = i === links.length - 1;
+            const isButton = l.isButton || (isLast && links.length > 1);
+            if (isButton) {
+              return `<a href="${esc(rewriteHref(l.href || l.url || '#', pageSlugs, currentSlug))}" class="btn" style="background:${btnBg};color:${btnText};border-radius:${btnRadius};padding:8px 20px;font-size:.9rem">${esc(l.label || l.text)}</a>`;
+            }
+            return `<a href="${esc(rewriteHref(l.href || l.url || '#', pageSlugs, currentSlug))}" style="color:${linkColor}">${esc(l.label || l.text)}</a>`;
+          }).join('')}
+        </div>
+      </div>
+    </nav>`;
+};
+
+const renderFooter = (footer: Record<string, any> | undefined, pageSlugs: Set<string> = new Set(), currentSlug: string = ''): string => {
+  if (!footer) return '';
+  const rawBrand = footer.logo || footer.brand || '';
+  const footerBrand = typeof rawBrand === 'object' && rawBrand !== null ? (rawBrand.text || rawBrand.name || '') : rawBrand;
+  const text = footer.text || footer.copyright || '';
+  const links = Array.isArray(footer.links) ? footer.links : [];
+  const footerStyles = footer.styles || {};
+  const bgColor = footerStyles.backgroundColor || footer.backgroundColor || '#1e293b';
+  const textColor = footerStyles.textColor || footer.textColor || '#94a3b8';
+  return `
+    <footer class="site-footer" style="background:${bgColor};color:${textColor}">
+      <div class="footer-inner">
+        ${links.length > 0 ? `<div class="footer-links">${links.map((l: any) => `<a href="${esc(rewriteHref(l.href || l.url || '#', pageSlugs, currentSlug))}">${esc(l.label || l.text)}</a>`).join('')}</div>` : ''}
+        <p>${esc(text)}</p>
+      </div>
+    </footer>`;
+};
+
+const BASE_CSS = `
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#334155}
+img{max-width:100%;height:auto;display:block}
+a{text-decoration:none;color:inherit}
+.site-nav{position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(0,0,0,.06)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem}
+.nav-logo{height:32px;width:auto}
+.nav-links{display:flex;gap:24px;font-size:.95rem}
+.site-section{width:100%}
+.section-inner{max-width:1200px;margin:0 auto;padding:64px 24px;text-align:center}
+.hero-inner{display:flex;flex-direction:column;align-items:center;gap:24px}
+.hero-inner h1{font-size:3rem;font-weight:800;line-height:1.15;max-width:800px}
+.sub{font-size:1.15rem;max-width:640px;margin:0 auto;opacity:.85}
+.eyebrow{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+.btn-group{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.btn{display:inline-block;padding:12px 28px;border-radius:8px;font-weight:600;font-size:.95rem;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.hero-img{margin-top:24px;border-radius:12px;max-height:480px;object-fit:cover}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;text-align:left;margin-top:40px}
+.card{padding:28px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card h3{margin-bottom:8px;font-size:1.15rem}
+.card-img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:16px}
+.testimonial-card{text-align:left}
+.quote{font-style:italic;margin-bottom:16px;font-size:1.05rem}
+.testimonial-author{display:flex;align-items:center;gap:12px}
+.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.pricing-card{text-align:center;position:relative}
+.pricing-card.popular{border:2px solid #2563eb}
+.popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;padding:2px 16px;border-radius:20px;font-size:.8rem;font-weight:600}
+.price{font-size:2.5rem;font-weight:800;margin:16px 0}
+.pricing-card ul{list-style:none;text-align:left;margin:16px 0}
+.pricing-card li{padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.pricing-card li::before{content:'✓ ';color:#22c55e;font-weight:700}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:40px}
+.gallery-grid img{width:100%;height:220px;object-fit:cover;border-radius:8px}
+.gallery-grid figcaption{text-align:center;margin-top:6px;font-size:.9rem;color:#64748b}
+.stats-grid{display:flex;justify-content:center;gap:48px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-value{font-size:2.5rem;font-weight:800}
+.stat-label{font-size:1rem;opacity:.7;margin-top:4px}
+.team-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px}
+.team-card{text-align:center}
+.faq-list{max-width:720px;margin:32px auto 0;text-align:left}
+.faq-item{border-bottom:1px solid rgba(0,0,0,.08);padding:16px 0}
+.faq-item summary{cursor:pointer;font-weight:600;font-size:1.05rem}
+.faq-item p{margin-top:8px;color:#64748b}
+.logo-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:32px;margin-top:32px}
+.logo-img{height:40px;width:auto;filter:grayscale(1);opacity:.6;transition:all .2s}
+.logo-img:hover{filter:none;opacity:1}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:left;margin-top:32px}
+.contact-info p{margin-bottom:8px}
+.contact-form{display:flex;flex-direction:column;gap:12px}
+.contact-form input,.contact-form textarea{padding:12px 16px;border:1px solid #e2e8f0;border-radius:8px;font-size:.95rem}
+.about-inner{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;text-align:left}
+.about-inner.img-left{direction:rtl}
+.about-inner.img-left>*{direction:ltr}
+.about-img{border-radius:12px;object-fit:cover;width:100%}
+.cta-inner{display:flex;flex-direction:column;align-items:center;gap:20px}
+.masonry-grid{columns:3;column-gap:16px;margin-top:40px}
+.masonry-item{break-inside:avoid;margin-bottom:16px}
+.masonry-item img{width:100%;border-radius:8px}
+.masonry-item figcaption{text-align:center;margin-top:6px;font-size:.9rem;color:#64748b}
+.form-status.success{color:#22c55e}
+.form-status.error{color:#ef4444}
+.site-footer{margin-top:auto}
+.footer-inner{max-width:1200px;margin:0 auto;padding:32px 24px;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+.footer-links a{opacity:.7;transition:opacity .2s}
+.footer-links a:hover{opacity:1}
+@media(max-width:768px){
+  .hero-inner h1{font-size:2rem}
+  .card-grid{grid-template-columns:1fr}
+  .contact-grid{grid-template-columns:1fr}
+  .about-inner{grid-template-columns:1fr}
+  .stats-grid{gap:24px}
+  .nav-links{display:none}
+}
+`;
+
+const buildPageHtml = (page: PageData, siteName: string, websiteId?: string, apiBaseUrl?: string, pageSlugs: Set<string> = new Set()): string => {
+  const title = page.meta?.title || page.name || siteName;
+  const description = page.meta?.description || '';
+  const sections = Array.isArray(page.sections) ? page.sections : [];
+  const formApiUrl = apiBaseUrl || (process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}/api/v1`);
+  const currentSlug = (page.slug || '/').replace(/^\/+/, '').replace(/\/+$/, '');
+
+  // Build global styles CSS from the page's globalStyles
+  const gs = page.globalStyles || {};
+  const globalCssParts: string[] = [];
+  if (gs.primaryColor) globalCssParts.push(`--color-primary:${gs.primaryColor}`);
+  if (gs.secondaryColor) globalCssParts.push(`--color-secondary:${gs.secondaryColor}`);
+  if (gs.accentColor) globalCssParts.push(`--color-accent:${gs.accentColor}`);
+  if (gs.backgroundColor) globalCssParts.push(`--color-bg:${gs.backgroundColor};background-color:${gs.backgroundColor}`);
+  if (gs.textColor) globalCssParts.push(`--color-text:${gs.textColor};color:${gs.textColor}`);
+  if (gs.fontFamily) globalCssParts.push(`font-family:${gs.fontFamily}`);
+  if (gs.borderRadius) globalCssParts.push(`--radius:${gs.borderRadius}`);
+  const globalStyleBlock = globalCssParts.length > 0 ? `\nbody{${globalCssParts.join(';')}}` : '';
+  // Import Google Font if specified
+  const fontImport = gs.fontFamily && !gs.fontFamily.includes('system') && !gs.fontFamily.includes('sans-serif')
+    ? `<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(gs.fontFamily.split(',')[0].replace(/['"]/g, '').trim())}:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>`
+    : '';
+
+  const formScript = `
+<script>
+document.querySelectorAll('.contact-form').forEach(function(form){
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var btn=form.querySelector('button[type=submit]');
+    var status=form.querySelector('.form-status');
+    var data={};
+    new FormData(form).forEach(function(v,k){data[k]=v});
+    btn.disabled=true;btn.textContent='Sending...';
+    if(status){status.style.display='none';}
+    fetch('${formApiUrl}/forms/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({website_id:'${websiteId || ''}',page_slug:'${esc(page.slug || '/')}',form_name:form.dataset.formName||'contact',data:data})
+    }).then(function(r){
+      if(!r.ok)throw new Error('Failed');
+      form.reset();
+      btn.textContent='Sent!';
+      if(status){status.textContent='Thank you! Your message has been sent.';status.className='form-status success';status.style.display='block';}
+      setTimeout(function(){btn.disabled=false;btn.textContent='Send Message';},3000);
+    }).catch(function(){
+      btn.disabled=false;btn.textContent='Send Message';
+      if(status){status.textContent='Something went wrong. Please try again.';status.className='form-status error';status.style.display='block';}
+    });
+  });
+});
+</script>`;
+
+  const hasContactForm = sections.some(sec => sec.type === 'contact' && sec.visible !== false);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${esc(title)}</title>
+${description ? `<meta name="description" content="${esc(description)}"/>` : ''}
+<meta property="og:title" content="${esc(title)}"/>
+${description ? `<meta property="og:description" content="${esc(description)}"/>` : ''}
+<meta property="og:type" content="website"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(title)}"/>
+${description ? `<meta name="twitter:description" content="${esc(description)}"/>` : ''}
+<link rel="canonical" href="/"/>
+<style>${BASE_CSS}${globalStyleBlock}</style>
+${fontImport}
+</head>
+<body>
+${renderNavbar(page.navbar, pageSlugs, currentSlug)}
+<main>
+${sections.map(renderSection).join('\n')}
+</main>
+${renderFooter(page.footer, pageSlugs, currentSlug)}
+${hasContactForm ? formScript : ''}
+</body>
+</html>`;
+};
+
+export const generateStaticSite = (content: Record<string, any>, siteName: string, websiteId?: string): GeneratedFile[] => {
+  const pages: PageData[] = Array.isArray(content.pages) ? content.pages : [];
+
+  if (pages.length === 0) {
+    return [{ filename: 'index.html', html: buildPageHtml({ id: 'default', name: siteName, slug: '/', sections: [], navbar: content.navbar, footer: content.footer, globalStyles: content.globalStyles }, siteName, websiteId) }];
+  }
+
+  // Build set of all page slugs for inter-page link rewriting
+  const pageSlugs = new Set<string>();
+  for (const page of pages) {
+    const slug = (page.slug || '/').replace(/^\/+/, '').replace(/\/+$/, '');
+    if (slug && slug !== '/') pageSlugs.add(slug);
+  }
+
+  const files: GeneratedFile[] = pages.map((page) => {
+    const slug = (page.slug || '/').replace(/^\/+/, '').replace(/\/+$/, '');
+    const filename = slug === '' || slug === '/' ? 'index.html' : `${slug}/index.html`;
+    return { filename, html: buildPageHtml(page, siteName, websiteId, undefined, pageSlugs) };
+  });
+
+  // Generate sitemap.xml
+  const baseUrl = (process.env.PUBLISHED_SITES_BASE_URL || 'http://localhost:5000/sites') + '/' + (websiteId || 'site') + '/latest';
+  const sitemapEntries = pages.map((page) => {
+    const slug = (page.slug || '/').replace(/^\/+/, '').replace(/\/+$/, '');
+    const loc = slug === '' || slug === '/' ? baseUrl + '/' : `${baseUrl}/${slug}/`;
+    return `  <url><loc>${esc(loc)}</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod></url>`;
+  });
+  files.push({
+    filename: 'sitemap.xml',
+    html: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries.join('\n')}\n</urlset>`,
+  });
+
+  // Generate robots.txt
+  files.push({
+    filename: 'robots.txt',
+    html: `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`,
+  });
+
+  return files;
+};

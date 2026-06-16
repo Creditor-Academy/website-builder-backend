@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Contact</title>
+
+<meta property="og:title" content="Contact"/>
+
+<meta property="og:type" content="website"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Contact"/>
+
+<link rel="canonical" href="/"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&family=Fraunces:ital,wght@0,300;0,700;0,900;1,400;1,700&family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,wght@0,400;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Sora:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Epilogue:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&family=Syne:wght@400;500;700&display=swap" rel="stylesheet"/>
+
+<style>:root{--theme-primary:#3b82f6;--theme-secondary:#8b5cf6;--theme-accent:#f59e0b;--theme-bg:#ffffff;--theme-text:#0f172a;--theme-bg-alt:#f8fafc;--theme-text-alt:#020617;--radius:12px;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--animation-speed:0.3s} body{background:var(--theme-bg);color:var(--theme-text);font-family:Inter, system-ui, sans-serif} .global-radius{border-radius:var(--radius)!important} .global-shadow{box-shadow:var(--shadow)!important} .global-transition{transition:all var(--animation-speed) ease!important}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:var(--theme-text,#0f172a);background:var(--theme-bg,#ffffff)}
+img{max-width:100%;height:auto;display:block}
+a{text-decoration:none;color:inherit}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+.nb-link{position:relative;font-family:'Geist',sans-serif;font-size:13px;font-weight:500;letter-spacing:.02em;text-decoration:none;transition:opacity .18s ease;padding-bottom:2px}
+.nb-link::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:1.5px;background:currentColor;transform:scaleX(0);transform-origin:right;transition:transform .25s ease}
+.nb-link:hover::after{transform:scaleX(1);transform-origin:left}
+.nb-link:hover{opacity:.65}
+.nb-cta{font-family:'Geist',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:2px;transition:opacity .2s ease,transform .2s cubic-bezier(.34,1.56,.64,1);display:inline-flex;align-items:center;gap:6px}
+.nb-cta:hover{opacity:.88;transform:translateY(-1px)}
+.nb-inner{max-width:1240px;margin:0 auto;padding:0 40px;height:68px;display:flex;align-items:center;justify-content:space-between}
+.nb-mob-link{font-family:'Geist',sans-serif;font-size:15px;font-weight:400;text-decoration:none;display:block;padding:14px 0;border-bottom:1px solid rgba(0,0,0,.07);letter-spacing:.01em;transition:padding-left .18s ease,opacity .18s ease}
+.nb-mob-link:hover{padding-left:6px;opacity:.65}
+.nb-mob-link:last-child{border-bottom:none}
+@media(max-width:768px){.nb-inner{padding:0 20px;height:60px}.nb-desktop-links{display:none!important}}
+
+
+.ft-social-btn{transition:background .22s ease,transform .22s cubic-bezier(.34,1.56,.64,1)}
+.ft-social-btn:hover{background:rgba(255,255,255,.12)!important;transform:translateY(-3px)}
+.ft-link{opacity:.45;transition:opacity .18s ease,padding-left .18s ease;display:inline-block;font-family:'Geist',sans-serif;font-size:14px;text-decoration:none;color:inherit}
+.ft-link:hover{opacity:1;padding-left:4px}
+.ft-bottom-link{opacity:.38;transition:opacity .18s ease;font-family:'Geist',sans-serif;font-size:12px;text-decoration:none;color:inherit}
+.ft-bottom-link:hover{opacity:.75}
+.ft-grid{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:0 56px}
+@media(max-width:768px){.ft-grid{grid-template-columns:1fr;gap:48px 0}.ft-wrapper{padding-left:20px!important;padding-right:20px!important;padding-top:40px!important}}
+
+
+.hero-section{position:relative;overflow:hidden;font-family:'DM Sans','Helvetica Neue',sans-serif}
+.hero-dot-grid{position:absolute;inset:0;opacity:.35;background-image:radial-gradient(circle,rgba(0,0,0,.08) 1px,transparent 1px);background-size:28px 28px}
+.hero-blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.08}
+.hero-stats{display:flex;flex-wrap:wrap;gap:32px;padding-top:24px;margin-top:24px;border-top:1px solid rgba(0,0,0,.08)}
+.hero-stat-val{font-size:1.8rem;font-weight:800;letter-spacing:-.02em}
+.hero-stat-label{font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border:1px solid rgba(0,0,0,.08);border-radius:999px;font-size:.78rem;font-weight:600;letter-spacing:.04em;margin-bottom:1.5rem;background:rgba(255,255,255,.6)}
+.hero-eyebrow-dot{width:7px;height:7px;border-radius:50%;background:#10b981}
+.hero-h1{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;line-height:1.08;letter-spacing:-.03em;max-width:600px}
+.hero-sub{font-size:1.05rem;line-height:1.7;opacity:.7;max-width:480px;margin-top:16px}
+.hero-btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:var(--radius,12px);font-weight:700;font-size:.9rem;text-decoration:none;transition:all .2s ease;border:none;cursor:pointer;box-shadow:var(--shadow,0 4px 16px rgba(0,0,0,.1))}
+.hero-btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.hero-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:var(--radius,12px);font-weight:600;font-size:.9rem;text-decoration:none;transition:all .2s ease;cursor:pointer;border:1.5px solid rgba(0,0,0,.12);background:white}
+.hero-btn-secondary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.hero-img-wrap{position:relative}
+.hero-img-shadow{position:absolute;inset:8px -8px -8px 8px;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+.hero-img{width:100%;border-radius:16px;object-fit:cover;position:relative;z-index:1}
+@media(max-width:768px){.hero-h1{font-size:2rem}.hero-grid{grid-template-columns:1fr!important}.hero-img-wrap{margin-top:32px}}
+
+
+.fs-root *{font-family:'DM Sans','Helvetica Neue',sans-serif;box-sizing:border-box}
+.fs-root h2,.fs-root h3,.fs-root h4{font-family:'Playfair Display',Georgia,serif!important}
+.fs-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#374151;margin-bottom:1.25rem}
+.fs-chip-dot{width:6px;height:6px;border-radius:50%;background:#111827;flex-shrink:0}
+.fs-card{position:relative;overflow:hidden;padding:2rem;border:1px solid #e5e7eb;transition:transform .35s cubic-bezier(.34,1.2,.64,1),box-shadow .35s ease}
+.fs-card:hover{transform:translateY(-4px);box-shadow:0 24px 48px -12px rgba(0,0,0,.1)}
+.fs-card-ghost{position:absolute;top:-8px;right:-4px;font-family:'Playfair Display',serif;font-size:4rem;font-weight:900;color:#f9fafb;pointer-events:none}
+.fs-card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:20px}
+.fs-card-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:16px}
+.fs-card-tag-dot{width:5px;height:5px;border-radius:50%}
+.fs-accent-bar{position:absolute;bottom:0;left:0;right:0;height:3px;transform:scaleX(0);transform-origin:left;transition:transform .4s ease}
+.fs-card:hover .fs-accent-bar{transform:scaleX(1)}
+
+
+.sv-card{transition:transform .4s cubic-bezier(.34,1.2,.64,1),box-shadow .4s ease}
+.sv-card:hover{transform:translateY(-8px);box-shadow:0 32px 64px -16px rgba(0,0,0,.18)}
+.sv-card-img{transition:transform .6s ease;width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.sv-card:hover .sv-card-img{transform:scale(1.07)}
+.sv-card-body{transform:translateY(10px);transition:transform .4s ease}
+.sv-card:hover .sv-card-body{transform:translateY(0)}
+.sv-card-desc{opacity:0;max-height:0;overflow:hidden;transition:opacity .35s ease,max-height .35s ease}
+.sv-card:hover .sv-card-desc{opacity:1;max-height:120px}
+
+
+.cta-section{font-family:'Sora',sans-serif}
+.cta-section h2,.cta-section h3,.cta-section h4{font-family:'DM Serif Display',Georgia,serif!important}
+.cta-btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;font-weight:700;font-size:.95rem;border:none;border-radius:var(--radius,12px);cursor:pointer;transition:all .2s ease;font-family:'Sora',sans-serif;letter-spacing:-.01em;white-space:nowrap;box-shadow:var(--shadow,none)}
+.cta-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.15)}
+.cta-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:rgba(255,255,255,.08);color:#fff;font-weight:600;font-size:.95rem;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius,12px);cursor:pointer;transition:all .2s ease;font-family:'Sora',sans-serif;letter-spacing:-.01em;white-space:nowrap;backdrop-filter:blur(4px)}
+.cta-btn-secondary:hover{background:rgba(255,255,255,.15);transform:translateY(-2px)}
+.cta-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.9);margin-bottom:1.5rem;font-family:'Sora',sans-serif}
+
+
+.t-card-hover{transition:transform .3s ease,box-shadow .3s ease}
+.t-card-hover:hover{transform:translateY(-4px);box-shadow:0 24px 48px -12px rgba(0,0,0,.14)}
+
+
+.pr-sect *{box-sizing:border-box}
+.pr-card{position:relative;overflow:hidden;border-radius:4px;transition:transform .35s cubic-bezier(.34,1.2,.64,1),box-shadow .35s ease}
+.pr-card:hover{transform:translateY(-7px)}
+.pr-card-default{background:#fff;border:1px solid rgba(0,0,0,.08);box-shadow:0 2px 16px rgba(0,0,0,.04)}
+.pr-card-default:hover{box-shadow:0 28px 60px rgba(0,0,0,.10)}
+.pr-card-popular{background:#0f172a;box-shadow:0 20px 60px rgba(15,23,42,.38)}
+.pr-card-popular:hover{box-shadow:0 32px 80px rgba(15,23,42,.48)}
+.pr-cta{width:100%;padding:14px;border-radius:3px;border:none;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .2s,transform .2s;font-family:'Geist',sans-serif}
+.pr-cta:hover{opacity:.88;transform:translateY(-1px)}
+.pr-cta-default{background:#0f172a;color:#fff}
+.pr-cta-popular{background:#fff;color:#0f172a}
+
+
+.ct-input{width:100%;font-family:'Geist',sans-serif;font-size:14px;background:#fafaf9;border:1px solid rgba(0,0,0,.1);border-radius:3px;padding:13px 16px;color:#0f172a;outline:none;transition:border-color .2s ease,background .2s ease;resize:none}
+.ct-input::placeholder{color:rgba(0,0,0,.25)}
+.ct-input:focus{border-color:#E11D48;background:#fff}
+.ct-label{font-family:'Geist',sans-serif;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,0,0,.38);display:block;margin-bottom:8px}
+.ct-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Geist',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border:none;border-radius:3px;padding:16px 32px;cursor:pointer;width:100%;transition:opacity .2s,transform .2s}
+.ct-submit:hover{opacity:.88;transform:translateY(-1px)}
+.ct-info-item{display:flex;gap:18px;align-items:flex-start;padding:20px 0;border-bottom:1px solid rgba(0,0,0,.07);transition:padding-left .2s ease}
+.ct-info-item:hover{padding-left:4px}
+.ct-info-item:last-child{border-bottom:none}
+
+
+.fq-sect *{box-sizing:border-box}
+.fq-acc-row{border-bottom:1px solid rgba(0,0,0,.08);transition:background .18s ease}
+.fq-acc-row:first-child{border-top:1px solid rgba(0,0,0,.08)}
+.fq-acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:26px 0;background:none;border:none;cursor:pointer;text-align:left}
+.fq-acc-btn:hover{opacity:.72}
+.fq-acc-icon{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.12);transition:background .2s ease}
+.fq-grid-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:4px;padding:32px 28px;position:relative;overflow:hidden;transition:transform .3s cubic-bezier(.34,1.2,.64,1),box-shadow .3s ease}
+.fq-grid-card:hover{transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.09)}
+
+
+.ab-val-item{transition:transform .3s ease,box-shadow .3s ease}
+.ab-val-item:hover{transform:translateY(-4px);box-shadow:0 20px 40px -10px rgba(0,0,0,.13)}
+.ab-icon-wrap{transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.ab-val-item:hover .ab-icon-wrap{transform:scale(1.15) rotate(-4deg)}
+
+
+.tm-card{transition:transform .35s cubic-bezier(.34,1.3,.64,1)}
+.tm-card:hover{transform:translateY(-6px)}
+.tm-card-img{transition:transform .55s ease}
+.tm-card:hover .tm-card-img{transform:scale(1.06)}
+.tm-card-overlay{opacity:0;transition:opacity .3s ease;background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 100%)}
+.tm-card:hover .tm-card-overlay{opacity:1}
+
+
+.gl-item-img{transition:transform .65s cubic-bezier(.25,.46,.45,.94)}
+.gl-item:hover .gl-item-img{transform:scale(1.07)}
+.gl-overlay{opacity:0;background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.15) 55%,transparent 100%);transition:opacity .32s ease;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
+.gl-item:hover .gl-overlay{opacity:1}
+.gl-overlay-content{transform:translateY(10px);transition:transform .32s ease}
+.gl-item:hover .gl-overlay-content{transform:translateY(0)}
+
+.site-section{width:100%}
+.section-inner{max-width:1200px;margin:0 auto;padding:80px 24px}
+.stats-grid{display:flex;justify-content:center;gap:48px;flex-wrap:wrap}
+.masonry-grid{columns:2;column-gap:16px;margin-top:40px}
+.masonry-item{break-inside:avoid;margin-bottom:16px}
+.masonry-item img{width:100%;border-radius:8px}
+.logo-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:32px;margin-top:32px}
+.logo-img{height:40px;width:auto;filter:grayscale(1);opacity:.5;transition:all .3s}
+.logo-img:hover{filter:none;opacity:1}
+.form-status{display:none;margin-top:8px;font-size:.9rem}
+.form-status.success{color:#22c55e}
+.form-status.error{color:#ef4444}
+@media(max-width:768px){
+  .section-inner{padding:48px 20px}
+  .stats-grid{gap:24px}
+  .masonry-grid{columns:1}
+}
+</style>
+</head>
+<body>
+
+  <nav style="background:transparent;color:#000000;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);border-bottom:1px solid rgba(128,128,128,.08)">
+    <div class="nb-inner">
+      <div style="display:flex;align-items:center;gap:10px">
+        
+        <span style="font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:-.02em">SiteBuilder</span>
+      </div>
+      <div class="nb-desktop-links" style="display:flex;align-items:center;gap:36px">
+        <a href="../index.html" class="nb-link" style="color:#000000">Home</a><a href="../about/index.html" class="nb-link" style="color:#000000">About</a><a href="../services/index.html" class="nb-link" style="color:#000000">Services</a><a href="../pricing/index.html" class="nb-link" style="color:#000000">Pricing</a><a href="../contact/index.html" class="nb-link" style="color:#000000">Contact</a><a href="/start" class="nb-cta" style="background:#0f172a;color:#ffffff;border-radius:2px">Get Started</a>
+      </div>
+    </div>
+  </nav>
+<main>
+
+    <section style="background:#f8fafc;padding:100px 0;font-family:'Geist','DM Sans',sans-serif">
+      <div style="max-width:1200px;margin:0 auto;padding:0 24px">
+        <div style="margin-bottom:48px">
+          <h2 style="font-family:'Fraunces',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;color:var(--theme-text, #0f172a);margin-bottom:12px">Get In Touch</h2>
+          <div style="width:40px;height:3px;background:#E11D48;margin-bottom:12px"></div>
+          <p style="font-size:.95rem;color:var(--theme-text, #0f172a);opacity:.55;max-width:480px">We'd love to hear from you. Send us a message!</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px">
+          <div>
+            
+              <div class="ct-info-item">
+                <div style="width:44px;height:44px;border-radius:4px;background:#E11D4818;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✉</div>
+                <div>
+                  <div style="font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,0,0,.35);margin-bottom:4px">Email Us</div>
+                  <div style="font-size:.95rem;color:var(--theme-text, #0f172a)">hello@example.com</div>
+                </div>
+              </div>
+              <div class="ct-info-item">
+                <div style="width:44px;height:44px;border-radius:4px;background:#0891B218;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">☎</div>
+                <div>
+                  <div style="font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,0,0,.35);margin-bottom:4px">Call Us</div>
+                  <div style="font-size:.95rem;color:var(--theme-text, #0f172a)">+1 (555) 123-4567</div>
+                </div>
+              </div>
+              <div class="ct-info-item">
+                <div style="width:44px;height:44px;border-radius:4px;background:#05966918;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📍</div>
+                <div>
+                  <div style="font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,0,0,.35);margin-bottom:4px">Visit Us</div>
+                  <div style="font-size:.95rem;color:var(--theme-text, #0f172a)">123 Business Street, City, Country</div>
+                </div>
+              </div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:4px;padding:36px">
+            <form class="contact-form" data-form-name="contact" style="display:flex;flex-direction:column;gap:16px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label class="ct-label">First Name</label><input type="text" name="firstName" class="ct-input" placeholder="First Name" required/></div>
+                <div><label class="ct-label">Last Name</label><input type="text" name="lastName" class="ct-input" placeholder="Last Name"/></div>
+              </div>
+              <div><label class="ct-label">Email</label><input type="email" name="email" class="ct-input" placeholder="Email" required/></div>
+              <div><label class="ct-label">Message</label><textarea name="message" class="ct-input" rows="5" placeholder="Message" required></textarea></div>
+              <button type="submit" class="ct-submit" style="background:#0f172a;color:#ffffff">SEND MESSAGE →</button>
+              <p class="form-status" style="display:none;margin-top:4px;font-size:.85rem"></p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section" style="background:var(--theme-primary, linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%));padding:80px 0;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;opacity:.06;background-image:url(&quot;data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E&quot;)"></div>
+      <div style="position:absolute;top:-200px;left:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);filter:blur(40px)"></div>
+      <div style="max-width:720px;margin:0 auto;padding:0 24px;text-align:center;position:relative;z-index:1">
+        
+        <h2 style="font-family:'DM Serif Display',serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:400;color:var(--theme-bg, #ffffff);line-height:1.15;margin-bottom:16px">Ready to Get Started?</h2>
+        <div style="width:56px;height:3px;background:rgba(255,255,255,.3);margin:20px auto;border-radius:2px"></div>
+        <p style="font-size:1.05rem;line-height:1.7;color:rgba(255,255,255,.78);max-width:520px;margin:0 auto 32px">Join thousands of creators who are already building amazing websites.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="#" class="cta-btn-primary" style="background:var(--theme-bg, #ffffff);color:var(--theme-primary, #4f46e5)">Start Building Now →</a>
+          <a href="#" class="cta-btn-secondary" style="background:rgba(255,255,255,.08);color:#ffffff">Contact Sales</a>
+        </div>
+        
+      </div>
+    </section>
+</main>
+
+  <footer style="background:#0f172a;color:#94a3b8;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;pointer-events:none">
+      <div style="position:absolute;top:-30%;left:-20%;width:80%;height:80%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.015),transparent 70%)"></div>
+    </div>
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.12),transparent)"></div>
+    <div class="ft-wrapper" style="max-width:1240px;margin:0 auto;padding:48px 24px 0;position:relative">
+      
+      <div class="ft-grid" style="margin-bottom:64px">
+        <div style="padding-right:40px">
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:26px;margin-bottom:12px">SiteBuilder</div>
+          <div style="width:32px;height:1px;background:rgba(255,255,255,.2);margin-bottom:16px"></div>
+          
+          
+          <div style="display:flex;gap:8px">
+            <a href="https://twitter.com/yourusername" class="ft-social-btn" style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:#94a3b8">𝕏</a><a href="https://facebook.com/yourpage" class="ft-social-btn" style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:#94a3b8">f</a><a href="https://instagram.com/yourusername" class="ft-social-btn" style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:#94a3b8">📷</a><a href="https://linkedin.com/in/yourprofile" class="ft-social-btn" style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:#94a3b8">in</a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 style="font-family:'Geist',sans-serif;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.38;margin-bottom:20px">Product</h4>
+          <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px">
+            <li><a href="../about/index.html" class="ft-link">About</a></li><li><a href="../pricing/index.html" class="ft-link">Pricing</a></li><li><a href="/templates" class="ft-link">Templates</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-family:'Geist',sans-serif;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.38;margin-bottom:20px">Company</h4>
+          <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px">
+            <li><a href="../about/index.html" class="ft-link">About</a></li><li><a href="/blog" class="ft-link">Blog</a></li><li><a href="/careers" class="ft-link">Careers</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-family:'Geist',sans-serif;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.38;margin-bottom:20px">Support</h4>
+          <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px">
+            <li><a href="/help" class="ft-link">Help Center</a></li><li><a href="../contact/index.html" class="ft-link">Contact</a></li><li><a href="/status" class="ft-link">Status</a></li>
+          </ul>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.07);padding:24px 0 40px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap">
+        <p style="font-family:'Geist',sans-serif;font-size:12px;opacity:.35">© 2024 SiteBuilder. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+<script>
+document.querySelectorAll('.contact-form').forEach(function(form){
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var btn=form.querySelector('button[type=submit]');
+    var status=form.querySelector('.form-status');
+    var fd={};
+    new FormData(form).forEach(function(v,k){fd[k]=v});
+    var fullName=((fd.firstName||'')+(fd.lastName?' '+fd.lastName:'')).trim()||fd.name||'Anonymous';
+    btn.disabled=true;btn.textContent='Sending...';
+    if(status){status.style.display='none';}
+    fetch('http://localhost:5000/api/v1/contact/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({websiteId:'cmo1d4yud000598tff0jn93w7',name:fullName,email:fd.email||'',subject:fd.subject||'',message:fd.message||''})
+    }).then(function(r){
+      if(!r.ok)throw new Error('Failed');
+      form.reset();
+      btn.textContent='Sent!';
+      if(status){status.textContent='Thank you! Your message has been sent.';status.className='form-status success';status.style.display='block';}
+      setTimeout(function(){btn.disabled=false;btn.textContent='SEND MESSAGE';},3000);
+    }).catch(function(){
+      btn.disabled=false;btn.textContent='SEND MESSAGE';
+      if(status){status.textContent='Something went wrong. Please try again.';status.className='form-status error';status.style.display='block';}
+    });
+  });
+});
+</script>
+
+<script>
+(function(){var d={websiteId:"cmo1d4yud000598tff0jn93w7",path:location.pathname,referrer:document.referrer};
+fetch("http://localhost:5000/api/v1/analytics/track",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d),keepalive:true}).catch(function(){});})();
+</script>
+</body>
+</html>
