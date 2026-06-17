@@ -14,15 +14,11 @@ export class TemplateDao {
 
     /** Get all website templates visible to the current user */
     async getVisibleWebsiteTemplates(user: AuthUser) {
-        const includeDeleted = user.role === UserRole.ADMIN
-            || user.role === UserRole.SUPER_ADMIN
-            || user.role === UserRole.INSTITUTION_ADMIN;
-
         const includeInstitution = { institution: { select: { id: true, name: true } } };
 
         if (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN) {
             return prisma.websiteTemplate.findMany({
-                where: includeDeleted ? {} : { deletedAt: null },
+                where: { deletedAt: null },
                 include: includeInstitution,
                 orderBy: { createdAt: 'desc' },
             });
@@ -32,7 +28,7 @@ export class TemplateDao {
 
         return prisma.websiteTemplate.findMany({
             where: {
-                ...(includeDeleted ? {} : { deletedAt: null }),
+                deletedAt: null,
                 OR: scopeFilters,
             },
             include: includeInstitution,

@@ -5,7 +5,6 @@ import {
   duplicateWebsiteContent,
   normalizeWebsiteContent,
   publishWebsiteContent,
-  verifyWebsiteDomain,
 } from './website-content.utils.js';
 
 test('normalizeWebsiteContent seeds builder metadata and draft version', () => {
@@ -52,12 +51,4 @@ test('duplicateWebsiteContent resets publish metadata and keeps pages', () => {
   assert.equal(duplicate.builderMeta.currentPublishedVersionId, null);
   assert.equal(duplicate.builderMeta.domains.length, 0);
   assert.equal(duplicate.builderMeta.deployments.length, 0);
-});
-
-test('custom domain verification activates the pending domain', async () => {
-  const withDomain = addWebsiteDomain({ pages: [] }, 'example.com', 'buildora.app');
-  const verified = await verifyWebsiteDomain(withDomain.content, 'example.com');
-
-  assert.equal(verified.domain?.status, 'active');
-  assert.equal(verified.domain?.sslEnabled, true);
 });

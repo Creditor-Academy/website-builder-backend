@@ -29,8 +29,21 @@ class DomainDao {
 
     async findByWebsiteId(websiteId: string) {
         return prismaClient.domain.findMany({
-            where: { website_id: websiteId },
+            where: { 
+                website_id: websiteId,
+                status: { not: 'DELETED' },
+            },
             orderBy: { created_at: 'desc' },
+        });
+    }
+
+    async findDeletedCustomDomains() {
+        return prismaClient.domain.findMany({
+            where: {
+                type: 'CUSTOM',
+                status: 'DELETED',
+                cloudfront_distribution_id: { not: null },
+            },
         });
     }
 

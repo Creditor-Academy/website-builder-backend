@@ -324,6 +324,19 @@ export const deleteDistribution = async (distributionId: string): Promise<void> 
             logger.info({ distributionId }, 'CloudFront distribution disabled — deletion will be completed by cleanup cron');
             // Note: Actual deletion requires waiting for the distribution to be fully disabled (Deployed status)
             // which can take 10-20 minutes. The cleanup cron should handle the actual DeleteDistributionCommand.
+            return;
+        }
+
+        // Step 3: If already disabled, check status and delete
+        const status = getResult.Distribution?.Status;
+        if (!config.Enabled && status === 'Deployed') {
+            await cf.send(new DeleteDistributionCommand({
+                Id: distributionId,
+                IfMatch: etag,
+            }));
+            logger.info({ distributionId }, 'CloudFront distribution permanently deleted');
+        } else {
+            logger.info({ distributionId, status }, 'CloudFront distribution is disabling. Waiting for Deployed status to delete.');
         }
     } catch (err: any) {
         if (err.name === 'NoSuchDistribution') {
@@ -344,77 +357,16 @@ export const deleteDistribution = async (distributionId: string): Promise<void> 
  * package. If it's not available, this falls back to a no-op with a warning.
  */
 export const updateKeyValueStore = async (slug: string, websiteId: string): Promise<void> => {
-    const kvsArn = KVS_ARN();
-    if (!kvsArn) {
-        logger.warn({ slug, websiteId }, 'CLOUDFRONT_KVS_ARN not configured — skipping KVS update');
-        return;
-    }
-
-    try {
-        // Dynamic import because @aws-sdk/client-cloudfront-keyvaluestore may not be installed yet
-        // @ts-ignore — module is intentionally optional
-        const { CloudFrontKeyValueStoreClient, PutKeyCommand, DescribeKeyValueStoreCommand } = await import(
-            /* @ts-ignore */ '@aws-sdk/client-cloudfront-keyvaluestore'
-        );
-
-        const kvsClient = new CloudFrontKeyValueStoreClient({ region: CF_REGION });
-
-        // Get the current ETag (required for puts)
-        const desc = await kvsClient.send(new DescribeKeyValueStoreCommand({ KvsARN: kvsArn }));
-        const etag = desc.ETag;
-        if (!etag) {
-            throw new Error('KeyValueStore missing ETag');
-        }
-
-        await kvsClient.send(new PutKeyCommand({
-            KvsARN: kvsArn,
-            Key: slug,
-            Value: websiteId,
-            IfMatch: etag,
-        }));
-
-        logger.info({ slug, websiteId }, 'CloudFront KVS mapping updated');
-    } catch (err: any) {
-        // If the KVS SDK is not installed, log a warning but don't fail the deployment
-        if (err.code === 'ERR_MODULE_NOT_FOUND' || err.code === 'MODULE_NOT_FOUND') {
-            logger.warn('@aws-sdk/client-cloudfront-keyvaluestore not installed — KVS update skipped');
-            return;
-        }
-        logger.error({ err, slug, websiteId }, 'Failed to update CloudFront KVS');
-        throw err;
-    }
+    logger.warn({ slug, websiteId }, 'CloudFront KVS is temporarily disabled');
+    return;
 };
 
 /**
  * Remove a subdomain mapping from the CloudFront KeyValueStore.
  */
 export const deleteKeyValueStoreEntry = async (slug: string): Promise<void> => {
-    const kvsArn = KVS_ARN();
-    if (!kvsArn) return;
-
-    try {
-        // @ts-ignore — module is intentionally optional
-        const { CloudFrontKeyValueStoreClient, DeleteKeyCommand, DescribeKeyValueStoreCommand } = await import(
-            /* @ts-ignore */ '@aws-sdk/client-cloudfront-keyvaluestore'
-        );
-
-        const kvsClient = new CloudFrontKeyValueStoreClient({ region: CF_REGION });
-        const desc = await kvsClient.send(new DescribeKeyValueStoreCommand({ KvsARN: kvsArn }));
-        const etag = desc.ETag;
-        if (!etag) return;
-
-        await kvsClient.send(new DeleteKeyCommand({
-            KvsARN: kvsArn,
-            Key: slug,
-            IfMatch: etag,
-        }));
-
-        logger.info({ slug }, 'CloudFront KVS mapping deleted');
-    } catch (err: any) {
-        if (err.code === 'ERR_MODULE_NOT_FOUND' || err.code === 'MODULE_NOT_FOUND') return;
-        if (err.name === 'ResourceNotFoundException') return;
-        logger.error({ err, slug }, 'Failed to delete CloudFront KVS entry');
-    }
+    logger.warn({ slug }, 'CloudFront KVS is temporarily disabled');
+    return;
 };
 
 // ─── Utilities ──────────────────────────────────────────────────────────────

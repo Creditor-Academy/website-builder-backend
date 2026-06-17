@@ -68,7 +68,8 @@ class WebsiteController {
     deleteWebsite = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const website = req.context.website!;
-            await this.websiteService.deleteWebsite(website);
+            const userId = req.context.user.id;
+            await this.websiteService.deleteWebsite(website, userId);
             return res.status(200).json({ message: 'Website deleted successfully' });
         } catch (error: any) {
             next(error);
@@ -151,45 +152,7 @@ class WebsiteController {
         }
     }
 
-    getDomains = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const website = req.context.website!;
-            const domains = await this.websiteService.getDomains(website);
-            return res.status(200).json({ domains });
-        } catch (error: any) {
-            next(error);
-        }
-    }
 
-    addDomain = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const website = req.context.website!;
-            const domain = await this.websiteService.addDomain(website, req.validated.body);
-            return res.status(201).json({ domain });
-        } catch (error: any) {
-            next(error);
-        }
-    }
-
-    removeDomain = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const website = req.context.website!;
-            await this.websiteService.removeDomain(website, req.validated.body);
-            return res.status(200).json({ message: 'Domain removed successfully' });
-        } catch (error: any) {
-            next(error);
-        }
-    }
-
-    verifyDomain = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const website = req.context.website!;
-            const verification = await this.websiteService.verifyDomain(website, req.validated.body);
-            return res.status(200).json(verification);
-        } catch (error: any) {
-            next(error);
-        }
-    }
 
     exportWebsite = async (req: Request, res: Response, next: NextFunction) => {
         try {

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AssetScope, AssetType, UserRole } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
@@ -63,6 +64,30 @@ class AssetsService {
     const scopeSegment = websiteId ? `website/${websiteId}` : 'global';
 
     return `assets/${userId}/${scopeSegment}/${crypto.randomUUID()}${extension.toLowerCase()}`;
+  }
+
+  private async optimizeImageIfNeeded(buffer: Buffer, mimetype?: string, originalName?: string): Promise<{ buffer: Buffer; mimetype?: string; extension?: string }> {
+    const isImage = mimetype?.startsWith('image/') || (originalName && /\.(png|jpe?g|webp)$/i.test(originalName));
+    const isSvg = mimetype === 'image/svg+xml' || (originalName && /\.svg$/i.test(originalName));
+    const isGif = mimetype === 'image/gif' || (originalName && /\.gif$/i.test(originalName));
+
+    if (isImage && !isSvg && !isGif) {
+      try {
+        const optimizedBuffer = await sharp(buffer)
+          .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80, effort: 4 })
+          .toBuffer();
+        return { buffer: optimizedBuffer, mimetype: 'image/webp', extension: '.webp' };
+      } catch (error) {
+        console.error('[AssetsService] Sharp image optimization failed:', error);
+      }
+    }
+    
+    const result: { buffer: Buffer; mimetype?: string; extension?: string } = { buffer };
+    if (mimetype !== undefined) result.mimetype = mimetype;
+    const extension = originalName ? path.extname(originalName) : undefined;
+    if (extension !== undefined) result.extension = extension;
+    return result;
   }
 
   /**
@@ -218,22 +243,38 @@ class AssetsService {
     websiteId?: string,
   ) {
     const scopedWebsiteId = websiteId ? await this.assertWebsiteAccess(user, websiteId) : undefined;
-    const objectKey = this.buildObjectKey(user.id, file.originalname, scopedWebsiteId);
+    
+    let fileBuffer: Buffer = await fs.readFile(file.path);
+    let finalMimetype = file.mimetype;
+    let finalOriginalName = file.originalname;
+
+    try {
+      const optimized = await this.optimizeImageIfNeeded(fileBuffer, file.mimetype, file.originalname);
+      fileBuffer = optimized.buffer;
+      if (optimized.mimetype) finalMimetype = optimized.mimetype;
+      if (optimized.extension) {
+        const baseName = path.parse(file.originalname).name;
+        finalOriginalName = `${baseName}${optimized.extension}`;
+      }
+    } catch (e) {
+      console.error('[AssetsService] Error during optimization step:', e);
+    }
+
+    const objectKey = this.buildObjectKey(user.id, finalOriginalName, scopedWebsiteId);
     let publicUrl: string;
 
     try {
-      const fileBuffer = await fs.readFile(file.path);
-      publicUrl = await this.uploadToS3(objectKey, fileBuffer, file.mimetype);
+      publicUrl = await this.uploadToS3(objectKey, fileBuffer, finalMimetype);
     } finally {
       await fs.rm(file.path, { force: true });
     }
 
     const asset = await prisma.asset.create({
       data: {
-        name: file.originalname,
-        type: this.getAssetType(file.mimetype, file.originalname),
+        name: finalOriginalName,
+        type: this.getAssetType(finalMimetype, finalOriginalName),
         url: publicUrl,
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        size: `${(fileBuffer.byteLength / (1024 * 1024)).toFixed(2)} MB`,
         scope: scopedWebsiteId ? AssetScope.WEBSITE : AssetScope.GLOBAL,
         objectKey,
         owner_id: user.id,
@@ -269,20 +310,33 @@ class AssetsService {
       throw new BadRequestError(`Failed to fetch asset from URL: ${response.status}`);
     }
 
-    const contentType = response.headers.get('content-type')?.split(';')[0]?.trim() || undefined;
+    let contentType = response.headers.get('content-type')?.split(';')[0]?.trim() || undefined;
     const urlExtension = path.extname(new URL(url).pathname);
     const derivedExtension = urlExtension || this.extensionFromContentType(contentType);
-    const sourceName = name.includes('.') ? name : `${name}${derivedExtension}`;
+    let sourceName = name.includes('.') ? name : `${name}${derivedExtension}`;
+    
+    let body: Buffer = Buffer.from(await response.arrayBuffer());
+    try {
+      const optimized = await this.optimizeImageIfNeeded(body, contentType, sourceName);
+      body = optimized.buffer;
+      if (optimized.mimetype) contentType = optimized.mimetype;
+      if (optimized.extension) {
+        const baseName = path.parse(sourceName).name;
+        sourceName = `${baseName}${optimized.extension}`;
+      }
+    } catch (e) {
+      console.error('[AssetsService] Error during optimization step:', e);
+    }
+
     const objectKey = this.buildObjectKey(user.id, sourceName, scopedWebsiteId);
-    const body = Buffer.from(await response.arrayBuffer());
     const publicUrl = await this.uploadToS3(objectKey, body, contentType);
 
     const asset = await prisma.asset.create({
       data: {
-        name,
+        name: sourceName,
         type: this.getAssetType(contentType, sourceName),
         url: publicUrl,
-        size: `${(body.byteLength / (1024 * 1024)).toFixed(1)} MB`,
+        size: `${(body.byteLength / (1024 * 1024)).toFixed(2)} MB`,
         scope: scopedWebsiteId ? AssetScope.WEBSITE : AssetScope.GLOBAL,
         objectKey,
         owner_id: user.id,

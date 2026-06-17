@@ -127,36 +127,7 @@ router.post(
     websiteController.rollbackDeployment
 );
 
-router.get(
-    '/:id/domains',
-    validateRequest(websiteIdParamsSchema, 'params'),
-    requireWebsiteOwnership,
-    websiteController.getDomains
-);
 
-router.post(
-    '/:id/domains',
-    validateRequest(websiteIdParamsSchema, 'params'),
-    validateRequest(domainSchema),
-    requireWebsiteOwnership,
-    websiteController.addDomain
-);
-
-router.delete(
-    '/:id/domains',
-    validateRequest(websiteIdParamsSchema, 'params'),
-    validateRequest(domainSchema),
-    requireWebsiteOwnership,
-    websiteController.removeDomain
-);
-
-router.post(
-    '/:id/domains/verify',
-    validateRequest(websiteIdParamsSchema, 'params'),
-    validateRequest(domainSchema),
-    requireWebsiteOwnership,
-    websiteController.verifyDomain
-);
 
 router.get(
     '/:id/export',

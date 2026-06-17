@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: http://localhost:5000/sites/cmo1d4yud000598tff0jn93w7/latest/sitemap.xml

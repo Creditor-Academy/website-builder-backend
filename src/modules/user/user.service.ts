@@ -4,6 +4,7 @@ import { generateAuthSessionKey } from '../../builders/redis-key.builder.js';
 import { UserRole } from '@prisma/client';
 import UserDao from './user.dao.js';
 import AuthDao from '../auth/auth.dao.js';
+import AuditService from '../audit/audit.service.js';
 import type { AuthUser } from '../../types/auth.types.js';
 import type { ListUsersQueryInput, UpdateOwnProfileInput } from './user.validation.js';
 import { NotFoundError, UnauthorizedError, UnprocessableEntityError } from '../../utils/error.utils.js';
@@ -11,10 +12,12 @@ import { NotFoundError, UnauthorizedError, UnprocessableEntityError } from '../.
 class UserService {
   private userDao: UserDao;
   private authDao: AuthDao;
+  private auditService: AuditService;
 
   constructor() {
     this.userDao = new UserDao();
     this.authDao = new AuthDao();
+    this.auditService = new AuditService();
   }
 
   async createUser(currentUser: AuthUser, data: any) {
@@ -103,6 +106,13 @@ class UserService {
 
     const sessionKeyPattern = generateAuthSessionKey(userId, '*');
     await cacheService.clear(sessionKeyPattern);
+
+    await this.auditService.logAction({
+      user_id: userId,
+      action: 'user.deactivate',
+      entity_type: 'user',
+      entity_id: userId,
+    });
   }
 
   async listUsers(filters: ListUsersQueryInput) {
@@ -133,7 +143,17 @@ class UserService {
     }
 
     // Admin can change anyone's role to/from ADMIN
-    return await this.userDao.updateUser(userId, { role: newRole });
+    const updatedUser = await this.userDao.updateUser(userId, { role: newRole });
+
+    await this.auditService.logAction({
+      user_id: currentUser.id,
+      action: 'user.role_change',
+      entity_type: 'user',
+      entity_id: userId,
+      metadata: { old_role: targetUser.role, new_role: newRole },
+    });
+
+    return updatedUser;
   }
 
   async updateUserStatus(currentUser: AuthUser, userId: string, active: boolean) {
@@ -166,6 +186,14 @@ class UserService {
       const sessionKeyPattern = generateAuthSessionKey(userId, '*');
       await cacheService.clear(sessionKeyPattern);
     }
+
+    await this.auditService.logAction({
+      user_id: currentUser.id,
+      action: 'user.status_change',
+      entity_type: 'user',
+      entity_id: userId,
+      metadata: { active },
+    });
 
     return updatedUser;
   }

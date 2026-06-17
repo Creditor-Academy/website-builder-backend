@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import dns from 'dns/promises';
 
 const DEFAULT_SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.app';
 const SERVER_IP = process.env.SERVER_IP || '0.0.0.0';
@@ -313,67 +312,7 @@ export const removeWebsiteDomain = (content: unknown, domain: string) => {
   return normalized;
 };
 
-export const verifyWebsiteDomain = async (content: unknown, domain: string): Promise<{ content: WebsiteContent; domain: WebsiteDomainRecord | null }> => {
-  const normalized = normalizeWebsiteContent(content);
-  let verifiedDomain: WebsiteDomainRecord | null = null;
 
-  // Perform actual DNS verification
-  let dnsVerified = false;
-  try {
-    // Check A record or CNAME
-    try {
-      const addresses = await dns.resolve4(domain);
-      if (addresses.includes(SERVER_IP)) {
-        dnsVerified = true;
-      }
-    } catch {}
-
-    if (!dnsVerified) {
-      try {
-        const cnames = await dns.resolveCname(domain);
-        if (cnames.some(c => c.endsWith(DEFAULT_SITE_HOST))) {
-          dnsVerified = true;
-        }
-      } catch {}
-    }
-
-    // Check TXT verification record
-    if (!dnsVerified) {
-      try {
-        const txtRecords = await dns.resolveTxt(domain);
-        const flat = txtRecords.map(r => r.join(''));
-        if (flat.some(t => t.includes(`site-verification=${domain}`))) {
-          dnsVerified = true;
-        }
-      } catch {}
-    }
-  } catch {
-    // DNS resolution failed entirely
-  }
-
-  normalized.builderMeta.domains = normalized.builderMeta.domains.map((item) => {
-    if (item.domain !== domain) {
-      return item;
-    }
-
-    verifiedDomain = {
-      ...item,
-      status: dnsVerified ? 'active' : 'pending',
-      sslEnabled: dnsVerified,
-      dnsRecords: {
-        ...item.dnsRecords,
-        verified: dnsVerified,
-      },
-    };
-
-    return verifiedDomain;
-  });
-
-  return {
-    content: normalized,
-    domain: verifiedDomain,
-  };
-};
 
 export const publishWebsiteContent = (
   content: unknown,

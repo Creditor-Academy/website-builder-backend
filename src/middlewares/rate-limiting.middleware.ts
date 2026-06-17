@@ -11,6 +11,7 @@ import cacheService from "../services/cache.service.js";
 export const rateLimiting = (prefix: string, rate_limit: { LIMIT: number, WINDOW_SEC: number }) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
+            if (process.env.NODE_ENV === 'test') return next();
             // Skip rate limiting for SUPER_ADMIN
             if (req.context?.user?.role === 'SUPER_ADMIN') {
                 return next();

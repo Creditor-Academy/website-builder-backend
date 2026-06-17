@@ -441,10 +441,10 @@ class AuthService {
 
 
     // Mark user as verified
-
     await this.authDao.updateUser(verificationToken.userId, { isVerified: true });
 
-
+    // Send Welcome Email asynchronously
+    emailService.sendWelcomeEmail(user.email, user.name).catch(console.error);
 
     return {
 
@@ -569,41 +569,50 @@ class AuthService {
 
 
   async googleAuth(token: string) {
-
     try {
-
-      // Verify Google OAuth token
-
-      const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${token}`);
-
+      // Securely verify Google OAuth token using Google's tokeninfo endpoint
+      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+      
       if (!response.ok) {
-
         throw new UnauthorizedError('Invalid Google token');
+      }
+      
+      const googlePayload = await response.json();
+      console.log("Google Payload:", googlePayload);
+      console.log("Backend expected client ID:", process.env.GOOGLE_CLIENT_ID);
 
+      // Verify audience matches your app's Client ID to prevent Cross-App impersonation attacks
+      if (googlePayload.aud !== process.env.GOOGLE_CLIENT_ID) {
+        console.error("Audience mismatch:", googlePayload.aud, "!==", process.env.GOOGLE_CLIENT_ID);
+        throw new UnauthorizedError('Token was not issued for this application');
       }
 
-      
-
-      const googleUser = await response.json();
-
-      if (!googleUser.email) {
+      if (!googlePayload || !googlePayload.email) {
         throw new BadRequestError('Email not provided by Google');
       }
 
       // Check if user exists with this email
-
-      const existingUser = await this.authDao.findUserByEmail(googleUser.email);
+      const existingUser = await this.authDao.findUserByEmail(googlePayload.email);
       
       if (existingUser && existingUser.auth_provider !== 'google') {
         throw new ConflictError('Email already registered with different method');
       }
 
-      const user = existingUser ?? await this.authDao.createUser({
-        name: googleUser.name,
-        email: googleUser.email,
-        isVerified: true,
-        auth_provider: 'google'
-      });
+      let isNewUser = false;
+      let user: any = existingUser;
+      if (!user) {
+        user = await this.authDao.createUser({
+          name: googlePayload.name || 'User',
+          email: googlePayload.email,
+          isVerified: true,
+          auth_provider: 'google'
+        });
+        isNewUser = true;
+      }
+
+      if (isNewUser && user) {
+        emailService.sendWelcomeEmail(user.email, user.name).catch(console.error);
+      }
 
       if (!user) {
 
@@ -679,10 +688,12 @@ class AuthService {
 
       };
 
-    } catch (error) {
-
+    } catch (error: any) {
+      console.error("Google Auth Catch Error:", error);
+      if (error.statusCode) {
+        throw error;
+      }
       throw new UnauthorizedError('Google authentication failed');
-
     }
 
   }

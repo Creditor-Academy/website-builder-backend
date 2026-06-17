@@ -13,6 +13,7 @@ import { metricsMiddleware, metricsHandler } from './middlewares/metrics.middlew
 import { domainRouter } from './middlewares/domain-router.middleware.js';
 import prismaClient from './config/prisma.js';
 import path from 'path';
+import { initCron } from './modules/cron.js';
 
 // ─── Environment Validation ─────────────────────────────────────────────────
 const requiredEnvVars = ['JWT_SECRET', 'POSTGRESQL_URL'] as const;
@@ -34,16 +35,18 @@ export const logger = pino({
 const app = express();
 
 await initRedis();
+initCron();
 
 // ─── Security & Performance Middleware ───────────────────────────────────────
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
 app.use(helmet());
 app.use(compression());
 app.use(requestId);
 app.use(metricsMiddleware);
 app.use(pinoHttp({
   logger,
-  autoLogging: { ignore: (req: any) => req.url === '/api/v1/health' },
+  autoLogging: false,
   genReqId: (req: any) => req.id,
 }));
 
@@ -80,9 +83,12 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }))
 app.use(cookieParser());
 
-// Allow any origin for the analytics tracking endpoint (called from published sites)
+// Allow any origin for endpoints called from published sites (analytics, forms)
 app.options('/api/v1/analytics/track', cors());
 app.use('/api/v1/analytics/track', cors());
+
+app.options('/api/v1/forms/submit', cors());
+app.use('/api/v1/forms/submit', cors());
 
 // ─── Domain Routing (custom domains & subdomains → published sites) ──────────
 app.use(domainRouter);

@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
-import fs from 'fs/promises';
 import prismaClient from '../config/prisma.js';
 import cacheService from '../services/cache.service.js';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getS3Client } from '../config/s3-client.js';
+import { Readable } from 'stream';
 
-const SITES_ROOT = path.resolve(process.cwd(), 'storage', 'sites');
 const SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.app';
 
 /**
@@ -61,7 +62,7 @@ export const domainRouter = async (req: Request, res: Response, next: NextFuncti
         if (host.endsWith(`.${SITE_HOST}`)) {
           const subdomain = host.replace(`.${SITE_HOST}`, '');
           const subdomainRecord = await prismaClient.domain.findUnique({
-            where: { domain: host },
+            where: { domain: subdomain },
             select: { website_id: true, status: true },
           });
           if (subdomainRecord && subdomainRecord.status === 'ACTIVE') {
@@ -78,50 +79,92 @@ export const domainRouter = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
-    // Serve static files from the site's latest deployment
+    // Serve static files from S3
     const reqPath = req.path === '/' ? '/index.html' : req.path;
-    let filePath: string;
-
-    // Try exact path first
+    let s3Key = `sites/${websiteId}/latest${reqPath}`;
+    
+    // Normalize path based on extension
+    let fallbackS3Key: string | null = null;
     if (reqPath.endsWith('/')) {
-      filePath = path.join(SITES_ROOT, websiteId, 'latest', reqPath, 'index.html');
-    } else if (path.extname(reqPath)) {
-      filePath = path.join(SITES_ROOT, websiteId, 'latest', reqPath);
-    } else {
-      // Try as directory with index.html
-      filePath = path.join(SITES_ROOT, websiteId, 'latest', reqPath, 'index.html');
+      s3Key = `sites/${websiteId}/latest${reqPath}index.html`;
+    } else if (!path.extname(reqPath)) {
+      s3Key = `sites/${websiteId}/latest${reqPath}.html`;
+      fallbackS3Key = `sites/${websiteId}/latest${reqPath}/index.html`;
     }
 
-    // Prevent path traversal
-    const resolvedPath = path.resolve(filePath);
-    const siteRoot = path.resolve(SITES_ROOT, websiteId, 'latest');
-    if (!resolvedPath.startsWith(siteRoot)) {
-      return res.status(403).send('Forbidden');
+    const s3 = getS3Client();
+    const bucket = (process.env.S3_SITES_BUCKET || process.env.S3_BUCKET || '').trim();
+
+    if (!bucket) {
+      return res.status(500).send('S3 bucket not configured for sites');
     }
 
     try {
-      await fs.access(resolvedPath);
-      const contentType = getContentType(resolvedPath);
-      const isText = contentType.includes('text/') || contentType.includes('json') || contentType.includes('xml') || contentType.includes('javascript');
+      let s3Object;
+      try {
+        s3Object = await s3.send(new GetObjectCommand({
+          Bucket: bucket,
+          Key: s3Key,
+        }));
+      } catch (err: any) {
+        if (fallbackS3Key && (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404)) {
+          s3Key = fallbackS3Key;
+          s3Object = await s3.send(new GetObjectCommand({
+            Bucket: bucket,
+            Key: s3Key,
+          }));
+        } else {
+          throw err;
+        }
+      }
+
+      const contentType = s3Object.ContentType || getContentType(s3Key);
       res.setHeader('Content-Type', contentType);
-      res.setHeader('X-Served-By', 'Buildora');
-      // Cache static assets aggressively, HTML for a short time
-      if (isText && resolvedPath.endsWith('.html')) {
+      res.setHeader('X-Served-By', 'Buildora S3 Proxy');
+      
+      if (s3Object.CacheControl) {
+        res.setHeader('Cache-Control', s3Object.CacheControl);
+      } else if (s3Key.endsWith('.html')) {
         res.setHeader('Cache-Control', 'public, max-age=60');
       } else {
         res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
       }
-      const content = await fs.readFile(resolvedPath, isText ? 'utf-8' : undefined);
-      return res.send(content);
-    } catch {
-      // File not found — try 404.html
-      const notFoundPath = path.join(siteRoot, '404.html');
-      try {
-        await fs.access(notFoundPath);
-        const content = await fs.readFile(notFoundPath, 'utf-8');
-        return res.status(404).send(content);
-      } catch {
-        return res.status(404).send('Page not found');
+
+      // Stream the body directly to Express response
+      if (s3Object.Body) {
+        const stream = s3Object.Body as Readable;
+        stream.on('error', (err) => {
+          console.error('[domain-router] S3 Stream Error:', err);
+          if (!res.headersSent) res.status(500).end();
+        });
+        return stream.pipe(res);
+      }
+      return res.status(404).send('Page not found');
+    } catch (err: any) {
+      // File not found
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
+        try {
+          const s3NotFound = await s3.send(new GetObjectCommand({
+            Bucket: bucket,
+            Key: `sites/${websiteId}/latest/404.html`,
+          }));
+          res.status(404);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          
+          if (s3NotFound.Body) {
+            const stream404 = s3NotFound.Body as Readable;
+            stream404.on('error', (err) => {
+              console.error('[domain-router] S3 404 Stream Error:', err);
+              if (!res.headersSent) res.status(500).end();
+            });
+            return stream404.pipe(res);
+          }
+        } catch {
+          return res.status(404).send('Page not found');
+        }
+      } else {
+        console.error('[domain-router] S3 Fetch Error:', err);
+        return res.status(500).send('Internal Server Error');
       }
     }
   } catch (error) {

@@ -82,7 +82,7 @@ export const createUserSchema = z.object({
 
 // User Id params schema
 export const userIdParamsSchema = z.object({
-  id: z.string().uuid('Invalid user ID format')
+  id: z.string().cuid('Invalid user ID format')
 });
 
 export type UpdateOwnProfileInput = z.infer<typeof updateOwnProfileSchema>;

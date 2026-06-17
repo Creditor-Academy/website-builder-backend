@@ -4,6 +4,8 @@ import {
   generateVerificationEmailHTML,
   generatePasswordResetEmailText,
   generateVerificationEmailText,
+  generateWelcomeEmailHTML,
+  generateWelcomeEmailText,
 } from "../builders/email-template.builder.js";
 
 const APP_NAME = process.env.APP_NAME || 'Buildora';
@@ -70,6 +72,16 @@ class EmailService {
 
     const html = generateVerificationEmailHTML(userName, verificationUrl);
     const text = generateVerificationEmailText(userName, verificationUrl);
+
+    return await this.sendEmail(to, subject, html, text);
+  }
+
+  async sendWelcomeEmail(to: string, userName: string) {
+    const loginUrl = `${process.env.FRONTEND_URL}/login`;
+    const subject = `Welcome to ${APP_NAME}!`;
+
+    const html = generateWelcomeEmailHTML(userName, loginUrl);
+    const text = generateWelcomeEmailText(userName, loginUrl);
 
     return await this.sendEmail(to, subject, html, text);
   }

@@ -104,3 +104,29 @@ If you didn't create an account, you can safely ignore this email.
 
 © ${YEAR} ${APP_NAME}. All rights reserved.`;
 };
+
+// ─── Welcome ──────────────────────────────────────────────────────────────────
+
+export const generateWelcomeEmailHTML = (userName: string, loginUrl: string) => {
+    return baseLayout(`
+      <h2 style="margin:0 0 16px;color:#111827;font-size:20px;font-weight:600;">Welcome to ${APP_NAME}!</h2>
+      <p style="margin:0 0 8px;color:#4b5563;font-size:15px;line-height:1.6;">Hi ${userName},</p>
+      <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">Your email has been successfully verified. You're all set to start building beautiful websites!</p>
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">Log in to your Dashboard</a>
+      </div>
+      <p style="margin:0 0 8px;color:#9ca3af;font-size:13px;">If you have any questions, feel free to reach out to our support team.</p>
+    `);
+};
+
+export const generateWelcomeEmailText = (userName: string, loginUrl: string) => {
+    return `Hi ${userName},
+
+Welcome to ${APP_NAME}! Your email has been successfully verified.
+
+You're all set to start building beautiful websites.
+
+Log in to your Dashboard: ${loginUrl}
+
+© ${YEAR} ${APP_NAME}. All rights reserved.`;
+};

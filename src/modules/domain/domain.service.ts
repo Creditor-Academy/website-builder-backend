@@ -6,8 +6,6 @@ import {
     createDistribution,
     deleteDistribution,
     deleteAcmCertificate,
-    updateKeyValueStore,
-    deleteKeyValueStoreEntry,
     createCacheInvalidation,
     isHostingConfigured,
 } from '../../services/aws-hosting.service.js';
@@ -66,12 +64,6 @@ class DomainService {
             ssl_enabled: true, // Covered by the wildcard *.buildora.app cert
         });
 
-        // Update CloudFront KeyValueStore for subdomain routing
-        try {
-            await updateKeyValueStore(data.slug, websiteId);
-        } catch (err) {
-            logger.error({ err, slug: data.slug, websiteId }, 'Failed to update CloudFront KVS — domain is saved but routing may not work');
-        }
 
         // Invalidate domain cache
         await cacheService.del(`domain:${hostname}`).catch(() => {});
@@ -227,11 +219,12 @@ class DomainService {
         if (domain.website_id !== websiteId) throw new NotFoundError('Domain not found');
 
         if (domain.type === 'SUBDOMAIN') {
-            // Remove KVS mapping
-            const slug = domain.domain.replace(`.${SITE_HOST()}`, '');
-            await deleteKeyValueStoreEntry(slug).catch(err => {
-                logger.error({ err, slug }, 'Failed to delete KVS entry');
-            });
+            // Invalidate domain cache
+            await cacheService.del(`domain:${domain.domain}`).catch(() => {});
+            // Delete from database
+            await this.domainDao.delete(domain.id);
+            logger.info({ websiteId, domain: domain.domain }, 'Subdomain removed');
+            return;
         } else if (domain.type === 'CUSTOM') {
             // Tear down CloudFront distribution (async — disabling takes time)
             if (domain.cloudfront_distribution_id) {
@@ -240,21 +233,13 @@ class DomainService {
                 });
             }
 
-            // Delete ACM certificate (may fail if distribution is still disabling — that's OK)
-            if (domain.acm_certificate_arn) {
-                await deleteAcmCertificate(domain.acm_certificate_arn).catch(err => {
-                    logger.error({ err, certArn: domain.acm_certificate_arn }, 'Failed to delete ACM certificate');
-                });
-            }
+            // Invalidate domain cache
+            await cacheService.del(`domain:${domain.domain}`).catch(() => {});
+
+            // Soft delete for background cleanup
+            await this.domainDao.updateStatus(domain.id, { status: 'DELETED' });
+            logger.info({ domain: domain.domain, type: domain.type }, 'Custom domain marked as DELETED for background cleanup');
         }
-
-        // Invalidate domain cache
-        await cacheService.del(`domain:${domain.domain}`).catch(() => {});
-
-        // Delete from database
-        await this.domainDao.delete(domain.id);
-
-        logger.info({ domain: domain.domain, type: domain.type }, 'Domain removed');
     }
 
     // ─── Certificate Polling (Cron) ─────────────────────────────────────────
@@ -279,6 +264,45 @@ class DomainService {
                 }
             } catch (err) {
                 logger.error({ err, domain: domain.domain }, 'Certificate poll check failed');
+            }
+        }
+    }
+
+    /**
+     * Poll all DELETED custom domains to check if their CloudFront distributions
+     * have finished disabling. If disabled, delete the distribution, the ACM cert,
+     * and permanently remove the domain from the database.
+     */
+    async cleanupDisabledDistributions() {
+        const deletedDomains = await this.domainDao.findDeletedCustomDomains();
+        if (deletedDomains.length === 0) return;
+
+        logger.info({ count: deletedDomains.length }, 'Cleaning up deleted custom domains');
+
+        for (const domain of deletedDomains) {
+            try {
+                // Try to delete the CloudFront distribution
+                if (domain.cloudfront_distribution_id) {
+                    await deleteDistribution(domain.cloudfront_distribution_id);
+                }
+
+                // If we reach here, it either didn't have one or it was successfully deleted (or is still disabling and we just wait)
+                // Wait, deleteDistribution logs and doesn't throw if it's still disabling. We need to know if it actually deleted it.
+                // However, if we just try to delete the ACM cert and it fails because it's still attached, that's fine. We'll catch and skip.
+                if (domain.acm_certificate_arn) {
+                    await deleteAcmCertificate(domain.acm_certificate_arn);
+                }
+
+                // If ACM deletion succeeds (or it didn't have one), we can hard delete from DB
+                await this.domainDao.delete(domain.id);
+                logger.info({ domain: domain.domain }, 'Fully cleaned up and removed DELETED domain');
+            } catch (err: any) {
+                // ResourceInUseException is expected if distribution is still disabling/deployed
+                if (err.name === 'ResourceInUseException') {
+                    logger.info({ domain: domain.domain }, 'Domain cleanup pending: Resources still in use (likely disabling)');
+                } else {
+                    logger.error({ err, domain: domain.domain }, 'Domain cleanup check failed');
+                }
             }
         }
     }

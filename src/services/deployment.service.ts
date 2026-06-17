@@ -88,6 +88,15 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
   const logs: string[] = [];
   const prefix = buildPrefix(input.websiteId, deploymentId);
 
+  const addLog = (message: string, isError = false) => {
+    logs.push(`[${new Date().toISOString()}] [${isError ? 'ERROR' : 'INFO'}] ${message}`);
+    if (isError) {
+      console.error(JSON.stringify({ deploymentId, websiteId: input.websiteId, message }));
+    } else {
+      console.log(JSON.stringify({ deploymentId, websiteId: input.websiteId, message }));
+    }
+  };
+
   const record: DeploymentRecord = {
     id: deploymentId,
     versionId: input.versionId,
@@ -108,11 +117,11 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
   try {
     // Phase 1: Build
     record.status = 'building';
-    logs.push(`[${new Date().toISOString()}] [INFO] Starting deployment ${deploymentId}`);
-    logs.push(`[${new Date().toISOString()}] [INFO] Generating static site for "${input.siteName}"...`);
+    addLog(`Starting deployment for ${input.siteName}`);
+    addLog(`Generating static site...`);
 
     const files = generateStaticSite(input.content, input.siteName, input.websiteId);
-    logs.push(`[${new Date().toISOString()}] [INFO] Generated ${files.length} file(s).`);
+    addLog(`Generated ${files.length} file(s).`);
 
     // Phase 2: Upload to S3 + local backup
     record.status = 'uploading';
@@ -123,7 +132,7 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
     if (useS3) {
       const bucket = getSitesBucket();
       const s3 = getS3Client();
-      logs.push(`[${new Date().toISOString()}] [INFO] Uploading ${files.length} file(s) to S3 bucket "${bucket}"...`);
+      addLog(`Uploading ${files.length} file(s) to S3 bucket "${bucket}"...`);
 
       for (const file of files) {
         const body = Buffer.from(file.html, 'utf-8');
@@ -150,9 +159,8 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
           ContentType: `${contentType}; charset=utf-8`,
           CacheControl: 'public, max-age=60',
         }));
-
-        logs.push(`[${new Date().toISOString()}] [INFO] Uploaded ${file.filename}`);
       }
+      addLog(`Finished uploading all files to S3`);
 
       // Upload 404 page
       const errorHtml = build404Html(input.siteName);
@@ -167,23 +175,8 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
         }));
       }
     } else {
-      logs.push(`[${new Date().toISOString()}] [INFO] S3 not configured — writing to local storage...`);
+      throw new Error('S3 is not configured. Deployment requires S3 bucket and credentials to be configured.');
     }
-
-    // Always write to local disk as backup
-    for (const file of files) {
-      const filePath = path.join(SITES_ROOT, prefix, file.filename);
-      await writeFile(filePath, file.html);
-      if (!useS3) totalSize += Buffer.byteLength(file.html, 'utf-8');
-    }
-    const latestDir = path.join(SITES_ROOT, input.websiteId, 'latest');
-    for (const file of files) {
-      await writeFile(path.join(latestDir, file.filename), file.html);
-    }
-    const errorHtml = build404Html(input.siteName);
-    await writeFile(path.join(latestDir, '404.html'), errorHtml);
-    await writeFile(path.join(SITES_ROOT, prefix, '404.html'), errorHtml);
-    logs.push(`[${new Date().toISOString()}] [INFO] Local backup written.`);
 
     // Phase 3: Finalize
     record.status = 'active';
@@ -191,12 +184,12 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
     record.totalSize = totalSize;
     record.url = `${getPublicBaseUrl()}/sites/${input.websiteId}/latest/index.html`;
     record.finishedAt = new Date().toISOString();
-    logs.push(`[${new Date().toISOString()}] [SUCCESS] Deployment complete (${useS3 ? 'S3' : 'local'}). URL: ${record.url}`);
+    addLog(`Deployment complete (${useS3 ? 'S3' : 'local'}). URL: ${record.url}`);
   } catch (err: any) {
     record.status = 'failed';
     record.errorMessage = err?.message || 'Unknown deployment error';
     record.finishedAt = new Date().toISOString();
-    logs.push(`[${new Date().toISOString()}] [ERROR] Deployment failed: ${record.errorMessage}`);
+    addLog(`Deployment failed: ${record.errorMessage}`, true);
   }
 
   // Persist to deployments table

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { TemplateScope, UserRole } from '@prisma/client';
 import templateDao from './template.dao.js';
+import cacheService from '../../services/cache.service.js';
 
 const canManageWebsiteTemplate = (template: any, user: Request['context']['user']) => {
     if (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN) {
@@ -50,6 +51,16 @@ class TemplateController {
      */
     getAllWebsiteTemplates = async (req: Request, res: Response) => {
         try {
+            const cacheKey = `templates:websites:role=${req.context.user.role}:inst=${req.context.user.institution_id || 'none'}`;
+            const cached = await cacheService.get(cacheKey);
+            
+            if (cached) {
+                return res.status(200).json({
+                    success: true,
+                    data: cached,
+                });
+            }
+
             const templates = await templateDao.getVisibleWebsiteTemplates(req.context.user);
 
             // Group by category
@@ -59,6 +70,8 @@ class TemplateController {
                 acc[cat].push(t);
                 return acc;
             }, {});
+
+            await cacheService.set(cacheKey, grouped, 3600); // Cache for 1 hour
 
             res.status(200).json({
                 success: true,

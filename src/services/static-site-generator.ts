@@ -1111,10 +1111,10 @@ document.querySelectorAll('.contact-form').forEach(function(form){
     var fullName=((fd.firstName||'')+(fd.lastName?' '+fd.lastName:'')).trim()||fd.name||'Anonymous';
     btn.disabled=true;btn.textContent='Sending...';
     if(status){status.style.display='none';}
-    fetch('${formApiUrl}/contact/submit',{
+    fetch('${formApiUrl}/forms/submit',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({websiteId:'${websiteId || ''}',name:fullName,email:fd.email||'',subject:fd.subject||'',message:fd.message||''})
+      body:JSON.stringify({website_id:'${websiteId || ''}',form_name:'contact',data:{name:fullName,email:fd.email||'',subject:fd.subject||'',message:fd.message||''}})
     }).then(function(r){
       if(!r.ok)throw new Error('Failed');
       form.reset();
