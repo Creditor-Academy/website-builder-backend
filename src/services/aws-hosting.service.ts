@@ -34,7 +34,7 @@ const KVS_ARN = () =>
     (process.env.CLOUDFRONT_KVS_ARN || '').trim();
 
 const SITE_HOST = () =>
-    (process.env.PUBLIC_SITE_HOST || 'buildora.app').trim();
+    (process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com').trim();
 
 // ─── Lazy Client Singletons ────────────────────────────────────────────────
 
@@ -351,7 +351,7 @@ export const deleteDistribution = async (distributionId: string): Promise<void> 
 
 /**
  * Update the CloudFront KeyValueStore with a subdomain → websiteId mapping.
- * This is used by the CloudFront Function to route *.buildora.app requests.
+ * This is used by the CloudFront Function to route *.buildora.lmsathena.com requests.
  *
  * Note: The KeyValueStore API requires the @aws-sdk/client-cloudfront-keyvaluestore
  * package. If it's not available, this falls back to a no-op with a warning.

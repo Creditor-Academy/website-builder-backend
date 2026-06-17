@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const DEFAULT_SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.app';
+const DEFAULT_SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com';
 const SERVER_IP = process.env.SERVER_IP || '0.0.0.0';
 
 type VersionSnapshot = {

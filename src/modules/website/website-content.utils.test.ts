@@ -27,12 +27,12 @@ test('publishWebsiteContent creates published version, domain and deployment', (
   }, {
     websiteId: 'cktestsiteid',
     subdomain: 'alpha-site',
-    siteHost: 'buildora.app',
+    siteHost: 'buildora.lmsathena.com',
   });
 
   assert.equal(result.response.success, true);
   assert.equal(result.content.builderMeta.currentPublishedVersionId !== null, true);
-  assert.equal(result.content.builderMeta.domains[0]?.domain, 'alpha-site.buildora.app');
+  assert.equal(result.content.builderMeta.domains[0]?.domain, 'alpha-site.buildora.lmsathena.com');
   assert.equal(result.content.builderMeta.deployments.length, 1);
 });
 

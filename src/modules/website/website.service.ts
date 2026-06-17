@@ -211,7 +211,7 @@ class WebsiteService {
             throw new BadRequestError('Website Deleted');
         }
 
-        const siteHost = process.env.PUBLIC_SITE_HOST || 'buildora.app';
+        const siteHost = process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com';
         const hostname = data.customDomain || (data.subdomain ? `${data.subdomain}.${siteHost}` : `${website.id.slice(0, 8)}.${siteHost}`);
 
         // Run the real deployment pipeline: generate HTML â†’ upload to S3

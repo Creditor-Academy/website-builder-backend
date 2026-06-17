@@ -6,13 +6,13 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getS3Client } from '../config/s3-client.js';
 import { Readable } from 'stream';
 
-const SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.app';
+const SITE_HOST = process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com';
 
 /**
  * Domain-routing middleware.
  *
  * Inspects the `Host` header to determine if the request is for a published site
- * (either a *.buildora.app subdomain or a verified custom domain).
+ * (either a *.buildora.lmsathena.com subdomain or a verified custom domain).
  *
  * If matched, serves the corresponding static files from storage/sites/{websiteId}/latest/.
  * If not matched, passes the request through to the normal API routes.
@@ -58,7 +58,7 @@ export const domainRouter = async (req: Request, res: Response, next: NextFuncti
         // Cache for 5 minutes
         await cacheService.set(cacheKey, websiteId, 300).catch(() => {});
       } else {
-        // Also check if it's a subdomain pattern: {slug}.buildora.app
+        // Also check if it's a subdomain pattern: {slug}.buildora.lmsathena.com
         if (host.endsWith(`.${SITE_HOST}`)) {
           const subdomain = host.replace(`.${SITE_HOST}`, '');
           const subdomainRecord = await prismaClient.domain.findUnique({

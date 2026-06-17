@@ -31,7 +31,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # ─── 2. Ask for domain ──────────────────────────────────────────────────────
-read -p "Enter your domain (e.g., buildora.app): " DOMAIN
+read -p "Enter your domain (e.g., buildora.lmsathena.com): " DOMAIN
 if [ -z "$DOMAIN" ]; then
     echo -e "${RED}Domain is required${NC}"
     exit 1

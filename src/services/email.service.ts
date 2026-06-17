@@ -16,7 +16,7 @@ class EmailService {
 
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
-    this.fromAddress = process.env.EMAIL_FROM || `${APP_NAME} <noreply@buildora.app>`;
+    this.fromAddress = process.env.EMAIL_FROM || `${APP_NAME} <noreply@buildora.lmsathena.com>`;
 
     if (apiKey) {
       this.resend = new Resend(apiKey);

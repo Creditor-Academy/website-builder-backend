@@ -440,7 +440,7 @@ NODE_ENV=development
 FRONTEND_ORIGINS        # Comma-separated allowed CORS origins
 FRONTEND_URL            # Frontend URL for email links
 API_BASE_URL            # Backend API base URL
-PUBLIC_SITE_HOST        # Domain for published sites (e.g., buildora.app)
+PUBLIC_SITE_HOST        # Domain for published sites (e.g., buildora.lmsathena.com)
 ```
 
 ---
@@ -628,6 +628,7 @@ docker compose up --build -d
 - Audit logging (full service layer and role checks)
 - Form submission handling (public endpoints and dashboard views)
 - Automated test suite (all backend tests passing)
+- CI/CD pipeline (Jenkinsfile configured for backend Docker deployments)
 
 ### 🚧 Partially Implemented
 
@@ -636,7 +637,6 @@ docker compose up --build -d
 
 ### ❌ Not Yet Implemented
 
-- CI/CD pipeline (GitHub Actions file exists but not tested)
 - CSRF protection (Needs full integration on frontend)
 - Image optimization pipeline
 - Webhook/integration support

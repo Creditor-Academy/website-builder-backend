@@ -19,7 +19,7 @@ import cacheService from '../../services/cache.service.js';
 import pino from 'pino';
 
 const logger = pino({ name: 'domain-service' });
-const SITE_HOST = () => (process.env.PUBLIC_SITE_HOST || 'buildora.app').trim();
+const SITE_HOST = () => (process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com').trim();
 
 class DomainService {
     private domainDao: DomainDao;
@@ -37,7 +37,7 @@ class DomainService {
     // ─── Add Subdomain ──────────────────────────────────────────────────────
 
     /**
-     * Register a platform subdomain (e.g. school.buildora.app) for a website.
+     * Register a platform subdomain (e.g. school.buildora.lmsathena.com) for a website.
      * - Creates a Domain record with type=SUBDOMAIN, status=ACTIVE
      * - Updates the CloudFront KeyValueStore so the CF Function can route to it
      */
@@ -67,7 +67,7 @@ class DomainService {
             type: 'SUBDOMAIN',
             status: 'ACTIVE',
             is_primary: true,
-            ssl_enabled: true, // Covered by the wildcard *.buildora.app cert
+            ssl_enabled: true, // Covered by the wildcard *.buildora.lmsathena.com cert
         });
 
 
