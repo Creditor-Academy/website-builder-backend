@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import apiRoutes from '../../modules/api.routes.js';
 import { errorHandler } from '../../middlewares/error.middleware.js';
 import { initRedis } from '../../config/redis-client.js';
+import prismaClient from '../../config/prisma.js';
 
 const BASE = 'http://127.0.0.1';
 let baseUrl = '';
@@ -53,6 +54,12 @@ before(async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(TEST_ADMIN),
   });
+
+  await prismaClient.user.update({
+    where: { email: TEST_ADMIN.email },
+    data: { role: 'ADMIN' }
+  });
+
   const adminLoginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -111,18 +118,18 @@ describe('Deployments API', () => {
     const res = await fetch(`${baseUrl}/api/v1/deployments`, {
       headers: adminAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    assert.equal(res.status, 200);
     
     const body = await res.json() as any;
     assert.ok(Array.isArray(body.deployments), 'Should return an array of deployments');
-    assert.ok(typeof body.total === 'number', 'Should return total count');
+    assert.ok(typeof body.pagination.total === 'number', 'Should return total count');
   });
 
   it('GET /deployments/stats — allows admin to get deployment statistics', async () => {
     const res = await fetch(`${baseUrl}/api/v1/deployments/stats`, {
       headers: adminAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    assert.equal(res.status, 200);
     
     const body = await res.json() as any;
     assert.ok(typeof body.total === 'number', 'total should be a number');

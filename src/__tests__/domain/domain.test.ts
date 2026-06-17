@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import apiRoutes from '../../modules/api.routes.js';
 import { errorHandler } from '../../middlewares/error.middleware.js';
 import { initRedis } from '../../config/redis-client.js';
+import prismaClient from '../../config/prisma.js';
 
 const BASE = 'http://127.0.0.1';
 let baseUrl = '';
@@ -71,6 +72,11 @@ before(async () => {
   });
   const websiteBody = await websiteRes.json() as any;
   websiteId = websiteBody.website?.id || websiteBody.data?.id || websiteBody.id;
+
+  // Clear auto-generated domains to test adding a subdomain
+  await prismaClient.domain.deleteMany({
+      where: { website_id: websiteId }
+  });
 });
 
 after(async () => {
@@ -91,8 +97,8 @@ describe('Domain API', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.json() as any;
-    assert.ok(Array.isArray(body.data));
-    assert.equal(body.data.length, 0);
+    assert.ok(Array.isArray(body.domains));
+    assert.equal(body.domains.length, 0);
   });
 
   it('POST /domains/website/:id/subdomain — adds a subdomain', async () => {
@@ -100,12 +106,12 @@ describe('Domain API', () => {
     const res = await fetch(`${baseUrl}/api/v1/domains/website/${websiteId}/subdomain`, {
       method: 'POST',
       headers: authed(),
-      body: JSON.stringify({ subdomain: randomSub }),
+      body: JSON.stringify({ slug: randomSub }),
     });
     assert.equal(res.status, 201);
     const body = await res.json() as any;
-    assert.equal(body.data.type, 'SUBDOMAIN');
-    assert.equal(body.data.status, 'ACTIVE');
+    assert.equal(body.domain.type, 'SUBDOMAIN');
+    assert.equal(body.domain.status, 'ACTIVE');
   });
 
   it('POST /domains/website/:id/subdomain — rejects duplicate subdomain', async () => {
@@ -114,7 +120,7 @@ describe('Domain API', () => {
     const res = await fetch(`${baseUrl}/api/v1/domains/website/${websiteId}/subdomain`, {
       method: 'POST',
       headers: authed(),
-      body: JSON.stringify({ subdomain: randomSub }),
+      body: JSON.stringify({ slug: randomSub }),
     });
     assert.equal(res.status, 400); // Bad request because website already has a subdomain
   });
@@ -133,9 +139,9 @@ describe('Domain API', () => {
     // It might fail if AWS is not fully mocked, but if it succeeds:
     if (res.status === 201) {
         const body = await res.json() as any;
-        assert.equal(body.data.type, 'CUSTOM');
-        assert.equal(body.data.status, 'PENDING');
-        customDomainId = body.data.id;
+        assert.equal(body.domain.type, 'CUSTOM');
+        assert.equal(body.domain.status, 'PENDING');
+        customDomainId = body.domain.id;
     }
   });
 
@@ -144,14 +150,14 @@ describe('Domain API', () => {
         // Find the subdomain instead to delete if custom domain failed
         const listRes = await fetch(`${baseUrl}/api/v1/domains/website/${websiteId}`, { headers: authed() });
         const listBody = await listRes.json() as any;
-        if (listBody.data.length > 0) {
-            customDomainId = listBody.data[0].id;
+        if (listBody.domains && listBody.domains.length > 0) {
+            customDomainId = listBody.domains[0].id;
         }
     }
 
     if (!customDomainId) return; // Skip if no domains
 
-    const res = await fetch(`${baseUrl}/api/v1/domains/${customDomainId}`, {
+    const res = await fetch(`${baseUrl}/api/v1/domains/${customDomainId}?websiteId=${websiteId}`, {
       method: 'DELETE',
       headers: authed(),
     });

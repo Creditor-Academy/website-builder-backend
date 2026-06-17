@@ -40,3 +40,6 @@ coverage/
 # Prisma local database files (if testing with SQLite locally)
 *.db
 *.db-journal
+
+# Graphify
+graphify-out/

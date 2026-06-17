@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import apiRoutes from '../../modules/api.routes.js';
 import { errorHandler } from '../../middlewares/error.middleware.js';
 import { initRedis } from '../../config/redis-client.js';
+import prismaClient from '../../config/prisma.js';
 
 const BASE = 'http://127.0.0.1';
 let baseUrl = '';
@@ -71,6 +72,11 @@ before(async () => {
   });
   const websiteBody = await websiteRes.json() as any;
   websiteId = websiteBody.website?.id || websiteBody.data?.id || websiteBody.id;
+
+  await prismaClient.website.update({
+      where: { id: websiteId },
+      data: { status: 'PUBLISHED' }
+  });
 });
 
 after(async () => {
@@ -123,6 +129,6 @@ describe('Forms API', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.json() as any;
-    assert.equal(body.data.is_read, true);
+    assert.equal(body.message, 'Marked as read');
   });
 });

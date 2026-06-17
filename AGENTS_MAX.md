@@ -625,19 +625,19 @@ docker compose up --build -d
 - Structured logging (Pino)
 - Health check endpoint
 - Docker deployment
+- Audit logging (full service layer and role checks)
+- Form submission handling (public endpoints and dashboard views)
+- Automated test suite (all backend tests passing)
 
 ### 🚧 Partially Implemented
 
 - Email service (Resend SDK installed, basic integration)
 - Google OAuth (started, incomplete)
-- Audit logging (model exists, no service layer)
-- Form submission handling (routes exist, needs completion)
 
 ### ❌ Not Yet Implemented
 
 - CI/CD pipeline (GitHub Actions file exists but not tested)
-- Automated test suite (placeholder only)
-- CSRF protection
+- CSRF protection (Needs full integration on frontend)
 - Image optimization pipeline
 - Webhook/integration support
 - Blog post management

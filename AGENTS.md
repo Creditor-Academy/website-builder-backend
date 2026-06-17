@@ -95,6 +95,7 @@ When creating or modifying a module:
 - `/api/v1/forms` — Form submissions
 - `/api/v1/analytics` — Page view tracking
 - `/api/v1/deployments` — Deployment management
+- `/api/v1/audit` — Audit logging (admin only)
 
 ---
 

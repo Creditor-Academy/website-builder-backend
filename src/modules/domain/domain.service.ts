@@ -54,6 +54,12 @@ class DomainService {
             throw new ConflictError(`Subdomain "${data.slug}" is already in use`);
         }
 
+        // A website can only have one platform subdomain
+        const existingDomains = await this.domainDao.findByWebsiteId(websiteId);
+        if (existingDomains.some(d => d.type === 'SUBDOMAIN')) {
+            throw new BadRequestError('Website already has a platform subdomain');
+        }
+
         // Create the domain record (subdomains are immediately active)
         const domain = await this.domainDao.create({
             website_id: websiteId,

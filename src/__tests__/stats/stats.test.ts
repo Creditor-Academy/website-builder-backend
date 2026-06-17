@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import apiRoutes from '../../modules/api.routes.js';
 import { errorHandler } from '../../middlewares/error.middleware.js';
 import { initRedis } from '../../config/redis-client.js';
+import prismaClient from '../../config/prisma.js';
 
 const BASE = 'http://127.0.0.1';
 let baseUrl = '';
@@ -22,7 +23,7 @@ const TEST_ADMIN = {
   name: 'Stats Admin Tester',
   email: `admin-stats-${randomUUID()}@example.com`,
   password: 'Password1',
-  role: 'ADMIN',
+  role: 'SUPER_ADMIN',
 };
 
 const TEST_USER = {
@@ -53,6 +54,12 @@ before(async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(TEST_ADMIN),
   });
+
+  await prismaClient.user.update({
+    where: { email: TEST_ADMIN.email },
+    data: { role: 'SUPER_ADMIN' }
+  });
+
   const adminLoginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -111,23 +118,23 @@ describe('Stats API', () => {
     const res = await fetch(`${baseUrl}/api/v1/stats/dashboard`, {
       headers: userAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    assert.equal(res.status, 200);
     
     const body = await res.json() as any;
-    assert.ok(typeof body.totalUsers === 'number', 'totalUsers should be a number');
-    assert.ok(typeof body.totalWebsites === 'number', 'totalWebsites should be a number');
+    assert.ok(typeof body.data.totalUsers === 'number', 'totalUsers should be a number');
+    assert.ok(typeof body.data.totalWebsites === 'number', 'totalWebsites should be a number');
     // Basic user might have 0 institutions, but the endpoint shouldn't crash
   });
 
   it('GET /stats/dashboard — allows admin to fetch stats', async () => {
-    const res = await fetch(`${baseUrl}/api/v1/stats/dashboard`, {
+    const res = await fetch(`${baseUrl}/api/v1/stats/dashboard?adminView=true`, {
       headers: adminAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    assert.equal(res.status, 200);
     
     const body = await res.json() as any;
-    assert.ok(typeof body.totalUsers === 'number', 'totalUsers should be a number');
-    assert.ok(body.totalUsers >= 2, 'Should count at least the two users we created');
+    assert.ok(typeof body.data.totalUsers === 'number', 'totalUsers should be a number');
+    assert.ok(body.data.totalUsers >= 2, 'Should count at least the two users we created');
   });
 
   it('GET /stats/dashboard — rejects unauthenticated requests', async () => {

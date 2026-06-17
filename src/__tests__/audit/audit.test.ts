@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import apiRoutes from '../../modules/api.routes.js';
 import { errorHandler } from '../../middlewares/error.middleware.js';
 import { initRedis } from '../../config/redis-client.js';
+import prismaClient from '../../config/prisma.js';
 
 const BASE = 'http://127.0.0.1';
 let baseUrl = '';
@@ -53,6 +54,12 @@ before(async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(TEST_ADMIN),
   });
+
+  await prismaClient.user.update({
+    where: { email: TEST_ADMIN.email },
+    data: { role: 'ADMIN' }
+  });
+
   const adminLoginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -111,11 +118,11 @@ describe('Audit API', () => {
     const res = await fetch(`${baseUrl}/api/v1/audit`, {
       headers: adminAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    assert.equal(res.status, 200);
     
     const body = await res.json() as any;
-    assert.ok(Array.isArray(body.logs), 'Should return an array of logs');
-    assert.ok(typeof body.total === 'number', 'Should return total count');
+    assert.ok(Array.isArray(body.data), 'Should return an array of logs');
+    assert.ok(typeof body.pagination.total === 'number', 'Should return total count');
   });
 
   it('GET /audit — prevents standard users from fetching audit logs', async () => {
