@@ -132,22 +132,21 @@ sudo usermod -aG docker ubuntu
 newgrp docker
 ```
 
-### 4B. Deploy React App (Docker — port 8080)
-```bash
-cd /home/ubuntu/website-builder
+### 4B. Jenkins Pipeline (Auto-Deploy)
+The frontend repository contains a `Jenkinsfile` that automates the full deployment. Jenkins will:
+1. Check out the frontend code
+2. Inject the `BACKEND_PRIVATE_IP` into `nginx.conf` automatically
+3. Build the Docker image with the correct `VITE_*` environment variables baked in
+4. Transfer the image via SSH to the Frontend EC2
+5. Run `docker compose up -d` to hot-swap the running container
 
-# Inject backend private IP into nginx.conf before building
-sed -i "s/<BACKEND_PRIVATE_IP>/<actual-backend-ip>/g" nginx.conf
+**Jenkins setup requires:**
+- Add SSH private key as a Jenkins credential named `frontend-ssh-key`
+- The corresponding public key must be in `/home/ubuntu/.ssh/authorized_keys` on the Frontend EC2
+- Add `VITE_GOOGLE_CLIENT_ID` as a secret text credential named `google-client-id` in Jenkins
 
-# Set frontend env vars and deploy
-export VITE_API_BASE_URL=/api/v1
-export VITE_SITE_HOST=https://buildora.lmsathena.com
-export VITE_GOOGLE_CLIENT_ID=<google-client-id>
+The React container will listen on host port `8080` after deployment.
 
-docker compose up --build -d
-```
-
-The React container listens on host port `8080`.
 
 ### 4C. Host Nginx Configuration
 Nginx on the host machine handles SSL termination and routes traffic.
