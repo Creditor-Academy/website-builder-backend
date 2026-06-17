@@ -25,8 +25,7 @@ RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
-# Create storage directories for published sites & assets
-RUN mkdir -p storage/sites storage/assets/files
+# All assets and published sites are served from S3 — no local storage needed
 
 EXPOSE 5000
 
