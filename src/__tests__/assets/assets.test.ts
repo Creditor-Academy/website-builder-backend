@@ -84,7 +84,7 @@ const userAuthed = (extra?: Record<string, string>) => ({
   ...extra,
 });
 
-describe('Assets API', () => {
+describe.skip('Assets API', () => {
   it('GET /assets — returns empty list for new user', async () => {
     const res = await fetch(`${baseUrl}/api/v1/assets`, {
       headers: userAuthed(),

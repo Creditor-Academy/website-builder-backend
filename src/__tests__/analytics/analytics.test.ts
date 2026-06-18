@@ -114,9 +114,10 @@ describe('Analytics API', () => {
     const res = await fetch(`${baseUrl}/api/v1/analytics/websites/${websiteId}?period=7d`, {
       headers: userAuthed(),
     });
-    assert.equal(res.status, 200, await res.text());
+    const text = await res.text();
+    assert.equal(res.status, 200, text);
     
-    const body = await res.json() as any;
+    const body = JSON.parse(text);
     assert.equal(body.websiteId, websiteId);
     assert.equal(body.period, '7d');
     assert.equal(body.totalViews, 1);
