@@ -12,7 +12,7 @@ import { requestId } from './middlewares/request-id.middleware.js';
 import { metricsMiddleware, metricsHandler } from './middlewares/metrics.middleware.js';
 import { domainRouter } from './middlewares/domain-router.middleware.js';
 import prismaClient from './config/prisma.js';
-import path from 'path';
+
 import { initCron } from './modules/cron.js';
 
 // ─── Environment Validation ─────────────────────────────────────────────────
@@ -93,9 +93,6 @@ app.use('/api/v1/forms/submit', cors());
 // ─── Domain Routing (custom domains & subdomains → published sites) ──────────
 app.use(domainRouter);
 
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'storage', 'assets', 'files')));
-app.use('/sites', express.static(path.resolve(process.cwd(), 'storage', 'sites')));
-
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/v1/health', async (_req, res) => {
   try {
@@ -109,9 +106,31 @@ app.get('/api/v1/health', async (_req, res) => {
 app.get('/api/v1/metrics', metricsHandler);
 
 // ─── Client Error Reporting ──────────────────────────────────────────────────
+const clientErrorCounts = new Map<string, { count: number; resetAt: number }>();
 app.post('/api/v1/client-errors', (req, res) => {
-  const { message, stack, componentStack, url, timestamp } = req.body || {};
-  logger.warn({ clientError: { message, stack, componentStack, url, timestamp } }, 'Client-side error reported');
+  // Basic IP-based rate limiting: max 20 reports per minute per IP
+  const ip = (req.ip || req.socket?.remoteAddress || 'unknown').substring(0, 64);
+  const now = Date.now();
+  const windowMs = 60_000;
+  const entry = clientErrorCounts.get(ip);
+  if (!entry || entry.resetAt < now) {
+    clientErrorCounts.set(ip, { count: 1, resetAt: now + windowMs });
+  } else {
+    entry.count++;
+    if (entry.count > 20) {
+      return res.status(429).end();
+    }
+  }
+  // Sanitize and truncate fields to prevent log injection
+  const truncate = (v: unknown, max = 500) => typeof v === 'string' ? v.slice(0, max) : undefined;
+  logger.warn({
+    clientError: {
+      message: truncate(req.body?.message),
+      stack: truncate(req.body?.stack, 1000),
+      url: truncate(req.body?.url, 200),
+      timestamp: truncate(req.body?.timestamp, 50),
+    },
+  }, 'Client-side error reported');
   res.status(204).end();
 });
 

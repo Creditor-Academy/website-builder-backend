@@ -5,8 +5,8 @@ import type { ListWebsitesQuerySchema, UpdateWebsiteSettingsInput } from "./webs
 
 class WebsiteDao {
     async findWebsiteById(id: string) {
-        return await prismaClient.website.findUnique({
-            where: { id }
+        return await prismaClient.website.findFirst({
+            where: { id, status: { not: WebsiteStatus.DELETED } }
         });
     }
 

@@ -570,20 +570,18 @@ class AuthService {
 
   async googleAuth(token: string) {
     try {
-      // Securely verify Google OAuth token using Google's tokeninfo endpoint
-      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+      // Verify the Google id_token against Google's tokeninfo endpoint.
+      // id_token is a signed JWT that contains the user's identity and is audience-validated.
+      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
       
       if (!response.ok) {
         throw new UnauthorizedError('Invalid Google token');
       }
       
       const googlePayload = await response.json();
-      console.log("Google Payload:", googlePayload);
-      console.log("Backend expected client ID:", process.env.GOOGLE_CLIENT_ID);
 
       // Verify audience matches your app's Client ID to prevent Cross-App impersonation attacks
       if (googlePayload.aud !== process.env.GOOGLE_CLIENT_ID) {
-        console.error("Audience mismatch:", googlePayload.aud, "!==", process.env.GOOGLE_CLIENT_ID);
         throw new UnauthorizedError('Token was not issued for this application');
       }
 

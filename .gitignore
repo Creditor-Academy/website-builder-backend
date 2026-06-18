@@ -43,3 +43,7 @@ coverage/
 
 # Graphify
 graphify-out/
+
+# Backup files
+*.bak
+*.old

@@ -59,10 +59,10 @@ export const domainRouter = async (req: Request, res: Response, next: NextFuncti
         await cacheService.set(cacheKey, websiteId, 300).catch(() => {});
       } else {
         // Also check if it's a subdomain pattern: {slug}.buildora.lmsathena.com
+        // Domain table stores the full hostname, so query with `host` directly
         if (host.endsWith(`.${SITE_HOST}`)) {
-          const subdomain = host.replace(`.${SITE_HOST}`, '');
           const subdomainRecord = await prismaClient.domain.findUnique({
-            where: { domain: subdomain },
+            where: { domain: host },
             select: { website_id: true, status: true },
           });
           if (subdomainRecord && subdomainRecord.status === 'ACTIVE') {

@@ -30,6 +30,6 @@ export const requireWebsiteOwnership = async (req: Request, res: Response, next:
         next();
     } catch (error: any) {
         console.error("Website Access Error:", error.message);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 }

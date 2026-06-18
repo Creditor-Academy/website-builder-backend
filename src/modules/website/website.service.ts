@@ -214,33 +214,54 @@ class WebsiteService {
         const siteHost = process.env.PUBLIC_SITE_HOST || 'buildora.lmsathena.com';
         const hostname = data.customDomain || (data.subdomain ? `${data.subdomain}.${siteHost}` : `${website.id.slice(0, 8)}.${siteHost}`);
 
-        // Run the real deployment pipeline: generate HTML â†’ upload to S3
+        // Run the real deployment pipeline: generate HTML → upload to S3
         const normalized = normalizeWebsiteContent(website.content as Record<string, any>);
+
+        // Build the published version snapshot first so we have a real versionId for the DB record
+        const published = publishWebsiteContent(website.content, {
+            websiteId: website.id,
+            ...(data.subdomain ? { subdomain: data.subdomain } : {}),
+            ...(data.customDomain ? { customDomain: data.customDomain } : {}),
+            deploymentRecord: {
+                id: '',         // placeholder — will be filled by deploy()
+                versionId: '',  // placeholder — filled below
+                status: 'active',
+                url: '',
+                domain: hostname,
+                artifactPrefix: '',
+                publishedAt: new Date().toISOString(),
+                startedAt: new Date().toISOString(),
+                finishedAt: null,
+                deployedBy: userId,
+                errorMessage: null,
+                fileCount: 0,
+                totalSize: 0,
+                logs: [],
+                sslEnabled: true,
+            },
+        });
+        const resolvedVersionId = published.publishedVersionId;
+
         const deploymentResult = await deploy({
             websiteId: website.id,
-            versionId: 'pending', // will be replaced below
+            versionId: resolvedVersionId || '',
             domain: hostname,
             content: normalized,
             siteName: website.name,
             deployedBy: userId,
         });
 
-        // Build the published content with the real deployment record
-        const published = publishWebsiteContent(website.content, {
-            websiteId: website.id,
-            ...(data.subdomain ? { subdomain: data.subdomain } : {}),
-            ...(data.customDomain ? { customDomain: data.customDomain } : {}),
-            deploymentRecord: {
-                ...deploymentResult,
-                versionId: '', // will be set by publishWebsiteContent
-                sslEnabled: true,
-            },
-        });
-
-        // Patch the versionId into the first deployment record
+        // Patch real deployment data back into the published content
         const firstDep = published.content.builderMeta.deployments[0];
-        if (firstDep && published.publishedVersionId) {
-            firstDep.versionId = published.publishedVersionId;
+        if (firstDep) {
+            firstDep.id = deploymentResult.id;
+            firstDep.status = deploymentResult.status;
+            firstDep.url = deploymentResult.url;
+            firstDep.fileCount = deploymentResult.fileCount;
+            firstDep.totalSize = deploymentResult.totalSize;
+            firstDep.logs = deploymentResult.logs;
+            firstDep.finishedAt = deploymentResult.finishedAt;
+            firstDep.artifactPrefix = deploymentResult.artifactPrefix;
         }
 
         await this.websiteDao.updateWebsite(website.id, {
@@ -268,6 +289,9 @@ class WebsiteService {
                 ssl_enabled: isSubdomain,
             },
         });
+
+        // Invalidate domain-router cache so the published site is served immediately
+        await cacheService.del(`domain:${hostname}`);
 
         await this.auditService.logAction({
             user_id: userId,

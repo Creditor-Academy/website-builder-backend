@@ -6,7 +6,7 @@ import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AssetScope, AssetType, UserRole } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import { buildS3PublicUrl, getS3BucketName, getS3Client } from '../../config/s3-client.js';
-import { NotFoundError, ForbiddenError, BadRequestError } from '../../utils/error.utils.js';
+import { NotFoundError, ForbiddenError, BadRequestError, InternalServerError } from '../../utils/error.utils.js';
 
 /** Check whether S3 credentials are actually configured (not just placeholders) */
 const isS3Configured = () => {
@@ -24,7 +24,6 @@ import prisma from '../../config/prisma.js';
 import type { AuthUser } from '../../types/auth.types.js';
 
 class AssetsService {
-  private readonly filesRoot = path.resolve(process.cwd(), 'storage', 'assets', 'files');
 
   private getAssetType(mimeType?: string, fileName?: string): AssetType {
     if (mimeType?.startsWith('image/')) return AssetType.image;
@@ -90,27 +89,10 @@ class AssetsService {
     return result;
   }
 
-  /**
-   * Save a file to local disk under storage/assets/files/ and return a URL
-   * served by the Express static middleware at /uploads/.
-   */
-  private async saveToLocalDisk(objectKey: string, body: Buffer): Promise<string> {
-    const localPath = path.resolve(this.filesRoot, objectKey.replace(/\//g, path.sep));
-    await fs.mkdir(path.dirname(localPath), { recursive: true });
-    await fs.writeFile(localPath, body);
-
-    const port = process.env.PORT || 5000;
-    return `http://localhost:${port}/uploads/${objectKey}`;
-  }
-
-  private async deleteFromLocalDisk(objectKey: string) {
-    const localPath = path.resolve(this.filesRoot, objectKey.replace(/\//g, path.sep));
-    await fs.rm(localPath, { force: true });
-  }
 
   private async uploadToS3(objectKey: string, body: Buffer, contentType?: string) {
     if (!isS3Configured()) {
-      return this.saveToLocalDisk(objectKey, body);
+      throw new InternalServerError('S3 is not configured. Asset uploads require S3 bucket and credentials.');
     }
 
     const client = getS3Client();
@@ -129,7 +111,7 @@ class AssetsService {
 
   private async deleteFromS3(objectKey: string) {
     if (!isS3Configured()) {
-      return this.deleteFromLocalDisk(objectKey);
+      return; // No-op if not configured — asset already not on S3
     }
 
     await getS3Client().send(new DeleteObjectCommand({

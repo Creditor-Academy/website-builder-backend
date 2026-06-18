@@ -1,6 +1,4 @@
 import crypto from 'crypto';
-import fs from 'fs/promises';
-import path from 'path';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getS3Client } from '../config/s3-client.js';
 import { generateStaticSite } from './static-site-generator.js';
@@ -34,8 +32,6 @@ interface DeployInput {
   deployedBy: string;
 }
 
-/** Root directory where all published sites are stored (local backup) */
-const SITES_ROOT = path.resolve(process.cwd(), 'storage', 'sites');
 
 /** Bucket for published sites — defaults to S3_SITES_BUCKET, falls back to S3_BUCKET */
 const getSitesBucket = () =>
@@ -76,11 +72,6 @@ const build404Html = (siteName: string) => `<!DOCTYPE html>
 <body><div class="c"><h1>404</h1><p>The page you're looking for doesn't exist.</p><a href="/">Go Home</a></div></body>
 </html>`;
 
-const writeFile = async (filePath: string, body: string) => {
-  const dir = path.dirname(filePath);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(filePath, body, 'utf-8');
-};
 
 export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
   const deploymentId = crypto.randomUUID();
@@ -134,7 +125,8 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
       const s3 = getS3Client();
       addLog(`Uploading ${files.length} file(s) to S3 bucket "${bucket}"...`);
 
-      for (const file of files) {
+      // Upload all files in parallel for maximum throughput
+      await Promise.all(files.map(async (file) => {
         const body = Buffer.from(file.html, 'utf-8');
         totalSize += body.length;
 
@@ -142,24 +134,25 @@ export const deploy = async (input: DeployInput): Promise<DeploymentRecord> => {
           : file.filename.endsWith('.txt') ? 'text/plain'
           : 'text/html';
 
-        // Upload to versioned path: sites/{websiteId}/{deploymentId}/...
-        await s3.send(new PutObjectCommand({
-          Bucket: bucket,
-          Key: `sites/${prefix}/${file.filename}`,
-          Body: body,
-          ContentType: `${contentType}; charset=utf-8`,
-          CacheControl: 'public, max-age=300',
-        }));
-
-        // Upload to latest path: sites/{websiteId}/latest/...
-        await s3.send(new PutObjectCommand({
-          Bucket: bucket,
-          Key: `sites/${input.websiteId}/latest/${file.filename}`,
-          Body: body,
-          ContentType: `${contentType}; charset=utf-8`,
-          CacheControl: 'public, max-age=60',
-        }));
-      }
+        await Promise.all([
+          // Versioned path: sites/{websiteId}/{deploymentId}/...
+          s3.send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: `sites/${prefix}/${file.filename}`,
+            Body: body,
+            ContentType: `${contentType}; charset=utf-8`,
+            CacheControl: 'public, max-age=300',
+          })),
+          // Latest path: sites/{websiteId}/latest/...
+          s3.send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: `sites/${input.websiteId}/latest/${file.filename}`,
+            Body: body,
+            ContentType: `${contentType}; charset=utf-8`,
+            CacheControl: 'public, max-age=60',
+          })),
+        ]);
+      }));
       addLog(`Finished uploading all files to S3`);
 
       // Upload 404 page
