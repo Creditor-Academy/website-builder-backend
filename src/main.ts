@@ -57,7 +57,7 @@ const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:8080,h
 
 const localhostOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
-app.use(cors({
+const globalCors = cors({
   origin: (origin, callback) => {
     const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -77,18 +77,20 @@ app.use(cors({
     callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true
-}));
+});
+
+app.use((req, res, next) => {
+  // Allow any origin for endpoints called from published sites
+  const publicPaths = ['/api/v1/analytics/track', '/api/v1/forms/submit', '/api/v1/contact'];
+  if (publicPaths.some(p => req.path.startsWith(p))) {
+    return cors()(req, res, next);
+  }
+  return globalCors(req, res, next);
+});
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }))
 app.use(cookieParser());
-
-// Allow any origin for endpoints called from published sites (analytics, forms)
-app.options('/api/v1/analytics/track', cors());
-app.use('/api/v1/analytics/track', cors());
-
-app.options('/api/v1/forms/submit', cors());
-app.use('/api/v1/forms/submit', cors());
 
 // ─── Domain Routing (custom domains & subdomains → published sites) ──────────
 app.use(domainRouter);
