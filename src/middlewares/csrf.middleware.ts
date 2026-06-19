@@ -16,16 +16,7 @@ const csrfConfig = doubleCsrf({
     size: 64,
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
     getCsrfTokenFromRequest: (req: Request) => req.headers['x-csrf-token'] as string,
-    getSessionIdentifier: (req: Request) => {
-        const token = req.cookies?.accessToken || req.cookies?.refreshToken;
-        if (token) {
-            try {
-                const decoded = jwt.decode(token) as any;
-                if (decoded?.sessionId) return decoded.sessionId;
-            } catch (e) {}
-        }
-        return 'anonymous';
-    },
+    getSessionIdentifier: (req: Request) => 'session',
 });
 
 export const invalidCsrfTokenError: HttpError = csrfConfig.invalidCsrfTokenError;
