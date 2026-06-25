@@ -12,6 +12,7 @@ import analyticsRoutes from './analytics/analytics.routes.js';
 import deploymentsRoutes from './deployments/deployments.routes.js';
 import domainRoutes from './domain/domain.routes.js';
 import auditRoutes from './audit/audit.routes.js';
+import paymentRoutes from './payment/payment.routes.js';
 import { doubleCsrfProtection, generateToken, invalidCsrfTokenError } from '../middlewares/csrf.middleware.js';
 
 const router = Router();
@@ -28,7 +29,7 @@ router.get('/csrf-token', (req, res) => {
 // Conditionally apply CSRF protection
 router.use((req, res, next) => {
     // Endpoints called by published websites and auth endpoints bypass CSRF
-    const bypassPaths = ['/analytics/track', '/forms/submit', '/contact/submit', '/auth/login', '/auth/register', '/auth/google', '/auth/forgot-password', '/auth/reset-password'];
+    const bypassPaths = ['/analytics/track', '/forms/submit', '/contact/submit', '/auth/login', '/auth/register', '/auth/google', '/auth/forgot-password', '/auth/reset-password', '/payments/webhook'];
     if (bypassPaths.some(p => req.path.startsWith(p))) {
         return next();
     }
@@ -62,5 +63,6 @@ router.use('/analytics', analyticsRoutes);
 router.use('/deployments', deploymentsRoutes);
 router.use('/domains', domainRoutes);
 router.use('/audit', auditRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
