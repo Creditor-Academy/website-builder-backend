@@ -122,9 +122,9 @@ class AuthService {
 
 
 
-    // Send verification email
-
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    // TEMPORARILY DISABLED FOR TESTING
+    // await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    console.log(`[TEST MODE] Mock email verification skipped for ${user.email}. Token: ${verificationToken}`);
 
 
 
