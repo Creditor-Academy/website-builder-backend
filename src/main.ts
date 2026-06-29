@@ -96,6 +96,8 @@ app.use(cookieParser());
 app.use(domainRouter);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
+app.get('/', (_req, res) => res.status(200).send('Buildora API is running'));
+
 app.get('/api/v1/health', async (_req, res) => {
   try {
     await prismaClient.$queryRawUnsafe('SELECT 1');

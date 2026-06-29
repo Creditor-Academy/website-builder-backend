@@ -21,8 +21,9 @@ export const domainRouter = async (req: Request, res: Response, next: NextFuncti
   try {
     const host = (req.hostname || req.headers.host || '').split(':')[0]!.toLowerCase().trim();
 
-    // Skip if this is the main app domain, localhost, or an API/assets path
-    if (!host || host === 'localhost' || host === '127.0.0.1' || host === SITE_HOST) {
+    // Skip if this is the main app domain, localhost, an API/assets path, or an IP address (AWS Health Check)
+    const isIpAddress = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+    if (!host || host === 'localhost' || host === '127.0.0.1' || host === SITE_HOST || isIpAddress) {
       return next();
     }
 
