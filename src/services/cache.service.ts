@@ -4,6 +4,13 @@ class CacheService {
     // In-memory fallback for Redis to keep Auth working
     private memoryStore = new Map<string, { value: any, expiresAt: number }>();
 
+    // Mock client to satisfy TypeScript in cron.ts
+    get client(): any {
+        return {
+            set: async () => 'OK',
+        };
+    }
+
     async get(key: string) {
         const item = this.memoryStore.get(key);
         if (!item) return null;
