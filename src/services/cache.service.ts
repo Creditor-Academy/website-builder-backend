@@ -1,6 +1,9 @@
 import { getRedisClient } from '../config/redis-client.js';
 
 class CacheService {
+    // Set this flag to false to instantly disable Redis globally
+    private isEnabled = false;
+
     // Lazy initialization of Redis client
     // access using this.client to use the Redis client instance
     get client() {
@@ -13,6 +16,7 @@ class CacheService {
      * @return - The cached value, or null if not found or on error
      */
     async get(key: string) {
+        if (!this.isEnabled) return null;
         try {
             const value = await this.client.get(key);
             return value;
@@ -29,6 +33,7 @@ class CacheService {
      * @param {number} ttl - Time to live in seconds (default: 3600)
      */
     async set(key: string, value: any, ttl: number = 3600) {
+        if (!this.isEnabled) return;
         try {
             await this.client.set(
                 key,
@@ -46,6 +51,7 @@ class CacheService {
      * @param {string} key - The cache key to delete
      */
     async del(key: string) {
+        if (!this.isEnabled) return;
         try {
             await this.client.del(key);
         }
@@ -59,6 +65,7 @@ class CacheService {
      * @param {string} pattern - The pattern to match cache keys (e.g., 'user:*')
      */
     async clear(pattern: string) {
+        if (!this.isEnabled) return;
         try {
             let cursor: number = 0;
             do {
@@ -76,6 +83,7 @@ class CacheService {
     }
 
     async increment(key: string, window: number) {
+        if (!this.isEnabled) return 1;
         // Atomic INCR + EXPIRE via Lua (race condition safe)
         const SCRIPT = `
             local count = redis.call('INCR', KEYS[1])
