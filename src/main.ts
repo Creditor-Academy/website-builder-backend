@@ -40,7 +40,11 @@ initCron();
 // ─── Security & Performance Middleware ───────────────────────────────────────
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
 app.use(compression());
 app.use(requestId);
 app.use(metricsMiddleware);
